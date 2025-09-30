@@ -19,7 +19,7 @@ def encrypt():
 
     return jsonify({'encrypted_message': result})
 
-@app.route('/decrypt', method = ['POST'])
+@app.route('/decrypt', methods = ['POST'])
 def decrypt():
     data = request.json
     message = data['message']
