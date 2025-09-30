@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cipher App</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Şifreleme Uygulaması</h1>
+
+        <div class="form-group">
+            <label>Şifreleme Yöntemi</label>
+            <select name="method" id="method">
+                <option value="caesar">Sezar Şifreleme</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Mod:</label>
+            <select name="mode" id="mode">
+                <option value="client">İstemci</option>
+                <option value="server">Sunucu</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Anahtar</label>
+            <input type="number" id="key" value="3">
+        </div>
+
+        <div class="form-group">
+            <label>Mesaj</label>
+            <textarea name="message" id="message" rows="4"></textarea>
+        </div>
+
+        <button onclick="processMessage()">Gönder</button>
+
+        <div class="form-group">
+            <label>Sonuç</label>
+            <textarea name="result" id="result" rows="4" readonly></textarea>
+        </div>
+    </div>
+
+    <script src="../static/js/script.js"></script>
+</body>
+</html>
