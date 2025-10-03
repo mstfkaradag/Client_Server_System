@@ -4,7 +4,7 @@ async function processMessage() {
     const key = document.getElementById('key').value;
     const message = document.getElementById('message').value;
 
-    const endpoint = mode === 'client' ? '/encrypt' : 'decrypt';
+    const endpoint = mode === 'client' ? '/encrypt' : '/decrypt';
 
     try{
         const response = await fetch(endpoint, {

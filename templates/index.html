@@ -14,20 +14,21 @@
             <label>Şifreleme Yöntemi</label>
             <select name="method" id="method">
                 <option value="caesar">Sezar Şifreleme</option>
+                <option value="vigenere">Vigenere Şifreleme</option>
             </select>
         </div>
 
         <div class="form-group">
             <label>Mod:</label>
             <select name="mode" id="mode">
-                <option value="client">İstemci</option>
-                <option value="server">Sunucu</option>
+                <option value="client">İstemci (Şifreleme)</option>
+                <option value="server">Sunucu (Deşifreleme)</option>
             </select>
         </div>
 
         <div class="form-group">
             <label>Anahtar</label>
-            <input type="number" id="key" value="3">
+            <input type="text" id="key">
         </div>
 
         <div class="form-group">

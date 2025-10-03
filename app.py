@@ -1,5 +1,6 @@
 from flask import Flask, request, render_template, jsonify
 from encryption.caesar import caesar_encrypt, caesar_decrypt
+from encryption.vigenere import vigenere_encrypt, vigenere_decrypt
 
 app = Flask(__name__)
 
@@ -11,11 +12,14 @@ def index():
 def encrypt():
     data = request.json
     message = data['message']
-    key = int(data['key'])
     method = data['method']
 
     if method == 'caesar':
+        key = int(data['key'])
         result = caesar_encrypt(message, key)
+    elif method == 'vigenere':
+        key = data['key']
+        result = vigenere_encrypt(message, key)
 
     return jsonify({'encrypted_message': result})
 
@@ -23,11 +27,15 @@ def encrypt():
 def decrypt():
     data = request.json
     message = data['message']
-    key = int(data['key'])
     method = data['method']
 
     if method == 'caesar':
+        key = int(data['key'])
         result = caesar_decrypt(message, key)
+    elif method == 'vigenere':
+        key = data['key']
+        result = vigenere_decrypt(message, key)
+
 
     return jsonify({'decrypted_message': result})
     
