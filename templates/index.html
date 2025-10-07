@@ -15,6 +15,7 @@
             <select name="method" id="method">
                 <option value="caesar">Sezar Şifreleme</option>
                 <option value="vigenere">Vigenere Şifreleme</option>
+                <option value="substitution">Substitution Şifreleme</option>
             </select>
         </div>
 
@@ -27,8 +28,13 @@
         </div>
 
         <div class="form-group">
-            <label>Anahtar</label>
+            <label>Anahtar(Substitution için büyük alfabe)</label>
             <input type="text" id="key">
+        </div>
+
+        <div class="form-group">
+            <label for="alphabet">Küçük Alfabe(Substitution)</label>
+            <input type="text" id="alphabet">
         </div>
 
         <div class="form-group">

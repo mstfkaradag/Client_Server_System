@@ -3,6 +3,7 @@ async function processMessage() {
     const method = document.getElementById('method').value;
     const key = document.getElementById('key').value;
     const message = document.getElementById('message').value;
+    const alphabet = document.getElementById('alphabet').value;
 
     const endpoint = mode === 'client' ? '/encrypt' : '/decrypt';
 
@@ -10,7 +11,7 @@ async function processMessage() {
         const response = await fetch(endpoint, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({method, key, message})
+            body: JSON.stringify({method, key, message, alphabet})
         });
 
         const data = await response.json();
