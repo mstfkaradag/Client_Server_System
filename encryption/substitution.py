@@ -28,13 +28,13 @@ class SubstitutionCipher:
         for char in text:
             if char.isupper():
                 for i in range(26):
-                    if self.upper_cipher_alphabet[i] == char:
-                        result = result + self.upper_alphabet[i]
+                    if self.lower_cipher_alphabet[i] == char:
+                        result = result + self.lower_alphabet[i]
                         break
             elif char.islower():
                 for i in range(26):
-                    if self.lower_cipher_alphabet[i] == char:
-                        result = result + self.lower_alphabet[i]
+                    if self.upper_cipher_alphabet[i] == char:
+                        result = result + self.upper_alphabet[i]
                         break
             else:
                 result = result + char
