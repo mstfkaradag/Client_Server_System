@@ -2,6 +2,7 @@ from flask import Flask, request, render_template, jsonify
 from encryption.caesar import CaesarCipher
 from encryption.vigenere import VigenereCipher
 from encryption.substitution import SubstitutionCipher
+from encryption.playfair import Playfair
 
 app = Flask(__name__)
 
@@ -28,6 +29,10 @@ def encrypt():
         key = data['key']
         result = SubstitutionCipher(key, alphabet)
         result_text = result.encrypt(message)
+    elif method == 'playfair':
+        key = data['key']
+        result = Playfair(key)
+        result_text = result.encrypt(message)
     
 
     return jsonify({'encrypted_message': result_text})
@@ -50,6 +55,10 @@ def decrypt():
     elif method == 'substitution':
         key = data['key']
         result = SubstitutionCipher(key, alphabet)
+        result_text = result.decrypt(message)
+    elif method == 'playfair':
+        key = data['key']
+        result = Playfair(key)
         result_text = result.decrypt(message)
 
 
