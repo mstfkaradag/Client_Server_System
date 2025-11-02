@@ -1,68 +1,137 @@
-from flask import Flask, request, render_template, jsonify
+import os
+from flask import Flask, request, send_from_directory, jsonify
+from flask_cors import CORS
+from flask_socketio import SocketIO, emit
+
 from encryption.caesar import CaesarCipher
 from encryption.vigenere import VigenereCipher
 from encryption.substitution import SubstitutionCipher
 from encryption.playfair import Playfair
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="../frontend", static_url_path="/")
+CORS(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
-@app.route('/')
+@app.route("/", methods=["GET"])
 def index():
-    return render_template('index.html')
+    return send_from_directory(app.static_folder,"index.html")
 
-@app.route('/encrypt', methods = ['POST'])
+def bad_request(msg):
+    return jsonify({"error": msg}), 400
+
+@app.route("/encrypt", methods = ["POST"])
 def encrypt():
-    data = request.json
-    message = data['message']
-    method = data['method']
-    alphabet = data['alphabet']
+    if not request.is_json():
+        return bad_request("İstek JSON olmalı")
+    
+    data = request.get_json()
+    message = data.get("message")
+    method = data.get("method")
 
-    if method == 'caesar':
-        key = int(data['key'])
-        result = CaesarCipher(key)
-        result_text = result.encrypt(message)
-    elif method == 'vigenere':
-        key = data['key']
-        result = VigenereCipher(key)
-        result_text = result.encrypt(message)
-    elif method == 'substitution':
-        key = data['key']
-        result = SubstitutionCipher(key, alphabet)
-        result_text = result.encrypt(message)
-    elif method == 'playfair':
-        key = data['key']
-        result = Playfair(key)
-        result_text = result.encrypt(message)
+    if not method:
+        return bad_request("Method girmediniz")
+    if message is None:
+        return bad_request("Mesaj giriniz")
+
+    try:
+        if method == "caesar":
+            key = data.get("key")
+            if key is None:
+                return bad_request("Key boş bırakılamaz")
+            try:
+                key = int(key)
+            except ValueError:
+                return bad_request("Key bir sayı olmalıdır")
+            result = CaesarCipher(key)
+            result_text = result.encrypt(message)
+        elif method == "vigenere":
+            key = data.get("key", "")
+            if isinstance(key, str) or key.strip() == "":
+                return bad_request("Key boş bırakılamaz")
+            result = VigenereCipher(key)
+            result_text = result.encrypt(message)
+        elif method == "substitution":
+            key = data.get("key")
+            alphabet = data.get("alphabet")
+            if isinstance(key, str) or key.strip() == "":
+                return bad_request("Key boş bırakılamaz")
+            if isinstance(alphabet, str) or alphabet.strip() == "":
+                return bad_request("Alfabe boş bırakılamaz")
+            result = SubstitutionCipher(key, alphabet)
+            result_text = result.encrypt(message)
+        elif method == "playfair":
+            key = data.get("key")
+            if isinstance(key, str) or key.strip() == "":
+                return bad_request("Key boş bırakılamaz")
+            result = Playfair(key)
+            result_text = result.encrypt(message)
+        else:
+            return bad_request("Desteklenmeyen method")
+        
+    except Exception as e:
+        return jsonify({"error": "Şifreleme esnasında hata oluştu: " + str(e)})
     
 
-    return jsonify({'encrypted_message': result_text})
+    return jsonify({"encrypted_message": result_text})
 
-@app.route('/decrypt', methods = ['POST'])
+@app.route("/decrypt", methods = ["POST"])
 def decrypt():
-    data = request.json
-    message = data['message']
-    method = data['method']
-    alphabet = data['alphabet']
-
-    if method == 'caesar':
-        key = int(data['key'])
-        result = CaesarCipher(-key)
-        result_text = result.encrypt(message)
-    elif method == 'vigenere':
-        key = data['key']
-        result = VigenereCipher(key)
-        result_text = result.decrypt(message)
-    elif method == 'substitution':
-        key = data['key']
-        result = SubstitutionCipher(key, alphabet)
-        result_text = result.decrypt(message)
-    elif method == 'playfair':
-        key = data['key']
-        result = Playfair(key)
-        result_text = result.decrypt(message)
-
-
-    return jsonify({'decrypted_message': result_text})
+    if not request.is_json():
+        return bad_request("İstek JSON olmalı")
     
-if __name__ == '__main__':
-    app.run(debug = True)
+    data = request.get_json()
+    message = data.get("message")
+    method = data.get("method")
+
+    if not method:
+        return bad_request("Method girmediniz")
+    if message is None:
+        return bad_request("Mesaj giriniz")
+
+    try:
+        if method == "caesar":
+            key = data.get("key")
+            if key is None:
+                return bad_request("Key boş bırakılamaz")
+            try:
+                key = int(key)
+            except ValueError:
+                return bad_request("Key bir sayı olmalıdır")
+            result = CaesarCipher(key)
+            result_text = result.decrypt(message)
+        elif method == "vigenere":
+            key = data.get("key", "")
+            if isinstance(key, str) or key.strip() == "":
+                return bad_request("Key boş bırakılamaz")
+            result = VigenereCipher(key)
+            result_text = result.decrypt(message)
+        elif method == "substitution":
+            key = data.get("key")
+            alphabet = data.get("alphabet")
+            if isinstance(key, str) or key.strip() == "":
+                return bad_request("Key boş bırakılamaz")
+            if isinstance(alphabet, str) or alphabet.strip() == "":
+                return bad_request("Alfabe boş bırakılamaz")
+            result = SubstitutionCipher(key, alphabet)
+            result_text = result.decrypt(message)
+        elif method == "playfair":
+            key = data.get("key")
+            if isinstance(key, str) or key.strip() == "":
+                return bad_request("Key boş bırakılamaz")
+            result = Playfair(key)
+            result_text = result.decrypt(message)
+        else:
+            return bad_request("Desteklenmeyen method")
+        
+    except Exception as e:
+        return jsonify({"error": "Deşifreleme esnasında hata oluştu: " + str(e)})
+    
+
+    return jsonify({"decrypted_message": result_text})
+
+@socketio.on("send_cipher")
+def handle_send_cipher(data):
+    emit("recv_cipher", data, broadcast=True, include_self=False)
+
+if __name__ == "__main__":
+    socketio.run(app, host="0.0.0.0", port=5000, debug=True)
