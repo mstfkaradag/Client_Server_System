@@ -21,7 +21,7 @@ def bad_request(msg):
 
 @app.route("/encrypt", methods = ["POST"])
 def encrypt():
-    if not request.is_json():
+    if not request.is_json:
         return bad_request("İstek JSON olmalı")
     
     data = request.get_json()
@@ -46,22 +46,22 @@ def encrypt():
             result_text = result.encrypt(message)
         elif method == "vigenere":
             key = data.get("key", "")
-            if isinstance(key, str) or key.strip() == "":
+            if not isinstance(key, str) or key.strip() == "":
                 return bad_request("Key boş bırakılamaz")
             result = VigenereCipher(key)
             result_text = result.encrypt(message)
         elif method == "substitution":
             key = data.get("key")
             alphabet = data.get("alphabet")
-            if isinstance(key, str) or key.strip() == "":
+            if not isinstance(key, str) or key.strip() == "":
                 return bad_request("Key boş bırakılamaz")
-            if isinstance(alphabet, str) or alphabet.strip() == "":
+            if not isinstance(alphabet, str) or alphabet.strip() == "":
                 return bad_request("Alfabe boş bırakılamaz")
             result = SubstitutionCipher(key, alphabet)
             result_text = result.encrypt(message)
         elif method == "playfair":
             key = data.get("key")
-            if isinstance(key, str) or key.strip() == "":
+            if not isinstance(key, str) or key.strip() == "":
                 return bad_request("Key boş bırakılamaz")
             result = Playfair(key)
             result_text = result.encrypt(message)
@@ -76,7 +76,7 @@ def encrypt():
 
 @app.route("/decrypt", methods = ["POST"])
 def decrypt():
-    if not request.is_json():
+    if not request.is_json:
         return bad_request("İstek JSON olmalı")
     
     data = request.get_json()
@@ -101,22 +101,22 @@ def decrypt():
             result_text = result.decrypt(message)
         elif method == "vigenere":
             key = data.get("key", "")
-            if isinstance(key, str) or key.strip() == "":
+            if not isinstance(key, str) or key.strip() == "":
                 return bad_request("Key boş bırakılamaz")
             result = VigenereCipher(key)
             result_text = result.decrypt(message)
         elif method == "substitution":
             key = data.get("key")
             alphabet = data.get("alphabet")
-            if isinstance(key, str) or key.strip() == "":
+            if not isinstance(key, str) or key.strip() == "":
                 return bad_request("Key boş bırakılamaz")
-            if isinstance(alphabet, str) or alphabet.strip() == "":
+            if not isinstance(alphabet, str) or alphabet.strip() == "":
                 return bad_request("Alfabe boş bırakılamaz")
             result = SubstitutionCipher(key, alphabet)
             result_text = result.decrypt(message)
         elif method == "playfair":
             key = data.get("key")
-            if isinstance(key, str) or key.strip() == "":
+            if not isinstance(key, str) or key.strip() == "":
                 return bad_request("Key boş bırakılamaz")
             result = Playfair(key)
             result_text = result.decrypt(message)

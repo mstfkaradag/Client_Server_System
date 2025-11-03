@@ -21,21 +21,18 @@
         </div>
 
         <div class="form-group">
-            <label>Mod:</label>
-            <select name="mode" id="mode">
-                <option value="client">İstemci (Şifreleme)</option>
-                <option value="server">Sunucu (Deşifreleme)</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label>Anahtar(Substitution için büyük alfabe)</label>
+            <label id="keyLabel">Anahtar(Substitution için büyük alfabe)</label>
             <input type="text" id="key">
         </div>
 
-        <div class="form-group">
-            <label for="alphabet">Küçük Alfabe(Substitution)</label>
+        <div class="form-group" id="alphabetGroup" style="display: none;">
+            <label for="alphabet">Küçük Harfler Alfabesi</label>
             <input type="text" id="alphabet">
+        </div>
+
+        <div class="form-group">
+            <label>Mesaj Geçmişi</label>
+            <ul id="messageList" class="message-list"></ul>
         </div>
 
         <div class="form-group">
@@ -43,14 +40,18 @@
             <textarea name="message" id="message" rows="4"></textarea>
         </div>
 
-        <button onclick="processMessage()">Gönder</button>
-
         <div class="form-group">
-            <label>Sonuç</label>
-            <textarea name="result" id="result" rows="4" readonly></textarea>
+            <label>
+                <input type="checkbox" id="showDecrypted">
+                Deşifreli Görünüm
+            </label>
         </div>
+
+        <button id="sendBtn" onclick="processMessage()">Gönder</button>
+        <button id="clearHistoryBtn" onclick="clearHistory()">Geçmişi Temizle</button>
+
     </div>
 
-    <script src="../static/js/script.js"></script>
+    <script src="/static/js/script.js"></script>
 </body>
 </html>
