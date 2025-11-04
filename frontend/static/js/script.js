@@ -9,6 +9,7 @@
     const messageInput = document.getElementById('message');
     const sendBtn = document.getElementById('sendBtn');
     const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+    const usernameInput = document.getElementById('username');
 
     let socket = null;
 
@@ -18,7 +19,7 @@
                 return resolve();
             }
             const s = document.createElement("script");
-            s.src = "/socket.io/socket.io.js";
+            s.src = "https://cdn.socket.io/4.8.1/socket.io.min.js";
             s.async = true;
             s.onload = () => resolve();
             s.onerror = () => reject(new Error("Socket.IO client yüklenemedi"));
@@ -49,7 +50,25 @@
     methodSelect.addEventListener("change", handleMethodChange);
     handleMethodChange();
 
-    function appendMessage({id, direction, cipher, method, alphabet}) {
+    function timeNow() {
+        const d = new Date();
+        const hh = String(d.getHours()).padStart(2, "0");
+        const mm = String(d.getMinutes()).padStart(2, "0");
+        return `${hh}:${mm}`;
+    }
+
+    function timeFromEpoch(epochMs) {
+        try {
+            const d = new Date(Number(epochMs));
+            return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+        } 
+        catch (e) {
+            return timeNow();
+        }
+    }
+
+
+    function appendMessage({id, sender, direction, cipher, method, alphabet, ts}) {
         const li = document.createElement("li");
         li.className = `message-item ${direction}`;
         li.dataset.cipher = cipher;
@@ -61,7 +80,11 @@
 
         const header = document.createElement("div");
         header.className = "msg-header";
-        header.textContent = direction === "sent" ? "Gönderen(Şifreli)" : "Alıcı(Şifreli)";
+        const you = (usernameInput && usernameInput.value ? usernameInput.value.trim() : "user_guest");
+        let headerText = sender ? sender : (direction === "sent" ? you : "user_guest");
+        if (direction === "sent" && headerText === you) headerText += " (siz)";
+        headerText += ` • ${ts || timeNow()}`;
+        header.textContent = headerText;
 
         const content = document.createElement("pre");
         content.className = "msg-content";
@@ -99,9 +122,17 @@
         }
         const cipher = li.dataset.cipher;
         const content = li.querySelector(".msg-content");
-        content.textContent = cipher;
-        li.querySelector(".restore-btn").style.display = "none";
-        li.querySelector(".decrypt-btn").style.display = "";
+        if (content) {
+            content.textContent = cipher;
+        }
+        const restoreBtn = li.querySelector(".restore-btn");
+        const decryptBtn = li.querySelector(".decrypt-btn");
+        if (restoreBtn) {
+            restoreBtn.style.display = "none";
+        }
+        if (decryptBtn) {
+            decryptBtn.style.display = "";
+        }
         li.dataset.decrypted = "false";
     }
 
@@ -184,6 +215,7 @@
         const key = keyInput.value;
         const message = messageInput.value.trim();
         const alphabet = alphabetInput.value;
+        const usernameTemp = (usernameInput && usernameInput.value ? usernameInput.value.trim() : "user_guest");
 
         if (!message) {
             alert("Mesaj boş olamaz");
@@ -227,9 +259,9 @@
             }
             const cipher = json.encrypted_message;
             const id = "m-" + Date.now() + "-" + Math.floor(Math.random() * 10000);
-            appendMessage({id, direction: "sent", cipher, method, alphabet});
+            appendMessage({id, sender: usernameTemp, direction: "sent", cipher, method, alphabet, ts: timeNow()});
             if (socket) {
-                socket.emit("send_cipher", {method: method, cipher: cipher, encrypted_message: cipher});
+                socket.emit("send_cipher", {method: method, encrypted_message: cipher, sender: usernameTemp, ts: Date.now()});
             }
             else{
                 console.warn("Socket bağlı değil");
@@ -259,7 +291,9 @@
             const method = data.method || methodSelect.value;
             const cipher = data.encrypted_message || data.cipher || data.message || data;
             const id = "m-" + Date.now() + "-" + Math.floor(Math.random() * 10000);
-            appendMessage({id, direction: "received", cipher, method, alphabet: alphabetInput.value});
+            const ts = data.ts ? timeFromEpoch(data.ts) : timeNow();
+            const sender = data.sender || "user_guest";
+            appendMessage({id, sender:sender, direction: "received", cipher, method, alphabet: alphabetInput.value, ts: ts});
         });
     }
 

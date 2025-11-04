@@ -11,6 +11,11 @@
         <h1>Şifreleme Uygulaması</h1>
 
         <div class="form-group">
+            <label>Kullanıcı Adı</label>
+            <input type="text" id="username">
+        </div>
+
+        <div class="form-group">
             <label>Şifreleme Yöntemi</label>
             <select name="method" id="method">
                 <option value="caesar">Sezar Şifreleme</option>
@@ -51,6 +56,10 @@
         <button id="clearHistoryBtn" onclick="clearHistory()">Geçmişi Temizle</button>
 
     </div>
+
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"
+        integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+"
+        crossorigin="anonymous"></script>
 
     <script src="/static/js/script.js"></script>
 </body>
