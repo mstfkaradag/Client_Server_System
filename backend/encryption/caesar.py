@@ -1,20 +1,38 @@
+from typing import Union
+
 class CaesarCipher:
 
-    def __init__(self, shift):
-        self.shift = shift % 26
+    def __init__(self, shift: Union[int, str]):
+        try:
+            s = int(shift)
+        except Exception:
+            raise ValueError("Anahtar bir tam sayı olmalı veya tam sayıya çevrilebilir bir string olmalıdır.")
+        self.shift = s % 26
+
+    @staticmethod
+    def _is_ascii_upper(ch) -> bool:
+        return 'A' <= ch <= 'Z'
+    
+    @staticmethod
+    def _is_ascii_lower(ch) -> bool:
+        return 'a' <= ch <= 'z'
 
     def _transform(self, text, shift):
+        if text is None:
+            raise ValueError("Text boş olamaz")
         shift = shift % 26
-        result = ""
+        out_chars = []
         for char in text:
-            if char.isupper():
-                result = result + chr((ord(char) + shift - 65) % 26 + 65) #ascii de büyük harfler 65-90 arası // chr -> bir sayıyı karaktere çevirir
-            elif char.islower():
-                result = result + chr((ord(char) + shift - 97) % 26 + 97) #ascii de küçük harfler 97-122 arası // ord -> karakterin ascii karşılığını verir
+            if self._is_ascii_upper(char):
+                base = ord('A')
+                out_chars.append(chr((ord(char) - base + shift) % 26 + base))
+            elif self._is_ascii_lower():
+                base = ord('a')
+                out_chars.append(chr((ord(char) - base + shift) % 26 + base))
             else:
-                result = result + char
+                out_chars.append(char)
             
-        return result
+        return ''.join(out_chars)
 
     def encrypt(self, text):
         return self._transform(text, self.shift)
