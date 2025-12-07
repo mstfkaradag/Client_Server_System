@@ -1,6 +1,7 @@
+from .base import Cipher
 import math
 
-class Playfair():
+class Playfair(Cipher):
     def __init__(self, key):
         key = key.upper()
         key = key.replace("J", "I")

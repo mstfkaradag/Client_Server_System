@@ -1,4 +1,6 @@
-class VigenereCipher:
+from .base import Cipher
+
+class VigenereCipher(Cipher):
 
     def __init__(self, key):
         self.key = key

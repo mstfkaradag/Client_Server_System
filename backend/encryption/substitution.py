@@ -1,4 +1,6 @@
-class SubstitutionCipher:
+from .base import Cipher
+
+class SubstitutionCipher(Cipher):
     def __init__(self, upper_cipher_alphabet, lower_cipher_alphabet):
         self.lower_alphabet = "abcdefghijklmnopqrstuvwxyz"
         self.upper_alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"

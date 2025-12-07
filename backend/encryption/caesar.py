@@ -1,6 +1,7 @@
+from .base import Cipher
 from typing import Union
 
-class CaesarCipher:
+class CaesarCipher(Cipher):
 
     def __init__(self, shift: Union[int, str]):
         try:
