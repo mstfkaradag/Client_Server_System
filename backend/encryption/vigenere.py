@@ -3,34 +3,62 @@ from .base import Cipher
 class VigenereCipher(Cipher):
 
     def __init__(self, key):
+        if not isinstance(key, str) or key.strip() == "":
+            raise ValueError("Key boş olamaz.")
         self.key = key
 
-    def encrypt(self, text, key = None):
-        if key is None:
-            key = self.key
-        result = ""
-        pattern = (key * ((len(text) // len(key)) + 1))[:len(text)]
-        for i, char in enumerate(text):
-            if char.isupper():
-                result = result + chr((ord(char) - 65 + (ord(pattern[i].upper()) - 65)) % 26 + 65)
-            elif char.islower():
-                result = result + chr((ord(char) - 97 + (ord(pattern[i].lower()) - 97)) % 26 + 97)
+    def _key_shifts(self, key):
+        upper_a_ascii = ord('A')
+        index = []
+
+        for ch in key:
+            if ch.isalpha():
+                i = ord(ch.upper()) - upper_a_ascii
+                index.append(i)
+        return index
+
+    def encrypt(self, text):
+        if not isinstance(text, str) or text.strip() == "":
+            raise TypeError("Text bir string olmalıdır")
+        k_shifts = self._key_shifts(self.key)
+        if not k_shifts:
+            raise ValueError("Key alfabetik olmalıdır")
+        
+        out = []
+        k_i = 0
+        k_len = len(k_shifts)
+        for ch in text:
+            if 'A' <= ch <= 'Z':
+                shift = k_shifts[k_i % k_len]
+                out.append(chr((ord(ch) - 65 + shift) % 26 + 65))
+                k_i += 1
+            elif 'a' <= ch <= 'z':
+                shift = k_shifts[k_i % k_len]
+                out.append(chr((ord(ch) - 97 + shift) % 26 + 97))
+                k_i += 1
             else:
-                result = result + char
+                out.append(ch)
+        return ''.join(out)
 
-        return result
-
-    def decrypt(self, text, key = None):
-        if key is None:
-            key = self.key
-        result = ""
-        pattern = (key * ((len(text) // len(key)) + 1))[:len(text)]
-        for i, char in enumerate(text):
-            if char.isupper():
-                result = result + chr((ord(char) - 65 - (ord(pattern[i].upper()) - 65)) % 26 + 65)
-            elif char.islower():
-                result = result + chr((ord(char) - 97 - (ord(pattern[i].lower()) - 97)) % 26 + 97)
+    def decrypt(self, text):
+        if not isinstance(text, str) or text.strip() == "":
+            raise TypeError("Text bir string olmalıdır")
+        k_shifts = self._key_shifts(self.key)
+        if not k_shifts:
+            raise ValueError("Key alfabetik olmalıdır")
+        
+        out = []
+        k_i = 0
+        k_len = len(k_shifts)
+        for ch in text:
+            if 'A' <= ch <= 'Z':
+                shift = k_shifts[k_i % k_len]
+                out.append(chr((ord(ch) - 65 - shift) % 26 + 65))
+                k_i += 1
+            elif 'a' <= ch <= 'z':
+                shift = k_shifts[k_i % k_len]
+                out.append(chr((ord(ch) - 97 - shift) % 26 + 97))
+                k_i += 1
             else:
-                result = result + char
-
-        return result
+                out.append(ch)
+        return ''.join(out)

@@ -27,7 +27,7 @@ class CaesarCipher(Cipher):
             if self._is_ascii_upper(char):
                 base = ord('A')
                 out_chars.append(chr((ord(char) - base + shift) % 26 + base))
-            elif self._is_ascii_lower():
+            elif self._is_ascii_lower(char):
                 base = ord('a')
                 out_chars.append(chr((ord(char) - base + shift) % 26 + base))
             else:
