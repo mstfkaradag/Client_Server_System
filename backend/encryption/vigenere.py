@@ -30,11 +30,11 @@ class VigenereCipher(Cipher):
         for ch in text:
             if 'A' <= ch <= 'Z':
                 shift = k_shifts[k_i % k_len]
-                out.append(chr((ord(ch) - 65 + shift) % 26 + 65))
+                out.append(chr((ord(ch) - ord('A') + shift) % 26 + ord('A')))
                 k_i += 1
             elif 'a' <= ch <= 'z':
                 shift = k_shifts[k_i % k_len]
-                out.append(chr((ord(ch) - 97 + shift) % 26 + 97))
+                out.append(chr((ord(ch) - ord('a') + shift) % 26 + ord('a')))
                 k_i += 1
             else:
                 out.append(ch)
@@ -53,11 +53,11 @@ class VigenereCipher(Cipher):
         for ch in text:
             if 'A' <= ch <= 'Z':
                 shift = k_shifts[k_i % k_len]
-                out.append(chr((ord(ch) - 65 - shift) % 26 + 65))
+                out.append(chr((ord(ch) - ord('A') - shift) % 26 + ord('A')))
                 k_i += 1
             elif 'a' <= ch <= 'z':
                 shift = k_shifts[k_i % k_len]
-                out.append(chr((ord(ch) - 97 - shift) % 26 + 97))
+                out.append(chr((ord(ch) - ord('a') - shift) % 26 + ord('a')))
                 k_i += 1
             else:
                 out.append(ch)
