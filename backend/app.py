@@ -8,6 +8,7 @@ from encryption.vigenere import VigenereCipher
 from encryption.substitution import SubstitutionCipher
 from encryption.playfair import Playfair
 from encryption.aes_lib import AesLib
+from encryption.des_lib import DesLib
 
 app = Flask(__name__, static_folder="../frontend", static_url_path="/")
 CORS(app)
@@ -72,6 +73,12 @@ def encrypt():
                 return bad_request("Key boş bırakılamaz")
             result = AesLib(key)
             result_text = result.encrypt(message)
+        elif method == "des-with-lib":
+            key = data.get("key", "")
+            if not isinstance(key, str) or key.strip() == "":
+                return bad_request("Key boş bırakılamaz")
+            result = DesLib(key)
+            result_text = result.encrypt(message)
         else:
             return bad_request("Desteklenmeyen method")
         
@@ -132,6 +139,12 @@ def decrypt():
             if not isinstance(key, str) or key.strip() == "":
                 return bad_request("Key boş bırakılamaz")
             result = AesLib(key)
+            result_text = result.decrypt(message)
+        elif method == "des-with-lib":
+            key = data.get("key")
+            if not isinstance(key, str) or key.strip() == "":
+                return bad_request("Key boş bırakılamaz")
+            result = DesLib(key)
             result_text = result.decrypt(message)
         else:
             return bad_request("Desteklenmeyen method")

@@ -14,9 +14,7 @@ class AesLib(Cipher):
     def encrypt(self, text):
         try:
             cipher = AES.new(self.key, AES.MODE_CBC)
-
             ct_bytes = cipher.encrypt(pad(text.encode('utf-8'), AES.block_size))
-
             return base64.b64encode(cipher.iv + ct_bytes).decode('utf-8')
         except Exception as e:
             return f"AES Şifreleme Hatası: {str(e)}"
@@ -29,7 +27,6 @@ class AesLib(Cipher):
             ct = raw[16:]
 
             cipher = AES.new(self.key, AES.MODE_CBC, iv)
-
             pt = unpad(cipher.decrypt(ct), AES.block_size)
             return pt.decode('utf-8')
         except Exception as e:
