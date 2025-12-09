@@ -3,169 +3,94 @@ import math
 
 class Playfair(Cipher):
     def __init__(self, key):
-        key = key.upper()
-        key = key.replace("J", "I")
-        result = ""
+        self.key = key.upper().replace("J", "I")
+        self.alphabet = "ABCDEFGHIKLMNOPQRSTUVWXYZ"
+
+        self.matrix = self._create_matrix(self.key)
+
+    def _create_matrix(self, key):
+        matrix_string = ""
         seen = set()
-        for c in key:
-            if c not in seen:
-                result += c
-                seen.add(c)
-        self.key = result
 
-    def key_square_matrix(self):
-        matrix = [
-            ["A", "B", "C", "D", "E"],
-            ["F", "G", "H", "I", "K"],
-            ["L", "M", "N", "O", "P"],
-            ["Q", "R", "S", "T", "U"],
-            [ "V", "W", "X", "Y", "Z"]
-        ]
+        for char in key + self.alphabet:
+            if char not in seen and char in self.alphabet:
+                matrix_string += char
+                seen.add(char)
 
-        new_matrix = [
-            ['', '', '', '', ''],
-            ['', '', '', '', ''],
-            ['', '', '', '', ''],
-            ['', '', '', '', ''],
-            ['', '', '', '', '']
-        ]
+        result = []
+        for i in range(0, 25, 5):
+            chunk = matrix_string[i: i + 5]
+            row = list(chunk)
+            result.append(row)
 
-        index = 0
-        while index != len(self.key):
-            for i in range(5):
-                for j in range(5):
-                    if self.key[index] == matrix[i][j]:
-                        matrix[i][j] = "0"
-            index += 1
-        
-        index = 0
-        for i in range(5):
-            for j in range(5):
-                if index < len(self.key):
-                    new_matrix[i][j] = self.key[index]
-                    index += 1
-                else:
-                    break
+        return result
+    
+    def _get_pos(self, char):
+        for row in range(5):
+            for col in range(5):
+                if self.matrix[row][col] == char:
+                    return row, col
+                
+        return None
+    
+    def _prepare_text(self, text):
+        text = text.upper().replace("J", "I").replace(" ", "")
+        result = []
+        i = 0
+        while i < len(text):
+            a = text[i]
 
-        index = len(self.key) // 5
-        mod = len(self.key) % 5
-
-        for i in range(5):
-            for j in range(5):
-                if matrix[i][j] != "0":
-                    new_matrix[index][mod] = matrix[i][j]
-                    mod += 1
-                    if mod == 5:
-                        mod = 0
-                        index += 1
-                        if index == 5:
-                            break
-                else:
-                    continue
-            if index == 5:
-                break
-
-        self.alphabet_matrix = new_matrix
-
-    def alphabet_location(self, letter):
-        for i in range(5):
-            for j in range(5):
-                if self.alphabet_matrix[i][j] == letter:
-                    return i, j
+            if i + 1 >= len(text):
+                result.append(a, 'X')
+                i += 1
+            elif a == text[i + 1]:
+                result.append(a, 'X')
+                i += 1
+            else:
+                result.append(a, text[i + 1])
+                i += 2
+        return result
 
     def encrypt(self, text):
-        self.key_square_matrix()
-        text = text.replace(" ", "")
-        text = text.upper()
-        text = text.replace("J", "I")
-        result = ""
-
-        index = 0
-        word_groups = []
-        while index < len(text):
-            if index == len(text) - 1:
-                word_groups.append(text[index] + 'X')
-                break
-            elif text[index] == text[index + 1]:
-                word_groups.append(text[index] + 'X')
-                index += 1
-            else:
-                word_groups.append(text[index] + text[index + 1])
-                index += 2
+        pairs = self._prepare_text(text)
+        encrypted_text = []
         
+        for char1, char2 in pairs:
+            row1, col1 = self._get_pos(char1)
+            row2, col2 = self._get_pos(char2)
 
-        cycle = math.ceil(len(text) / 2)
-        for i in range(cycle):
-            row, col = self.alphabet_location(word_groups[i][0])
-            row_other, col_other = self.alphabet_location(word_groups[i][1])
-            if row == row_other:
-                if col == 4:
-                    result = result + self.alphabet_matrix[row][0]
-                elif col != 4:
-                    result = result + self.alphabet_matrix[row][col + 1]
-                
-                if col_other == 4:
-                    result = result + self.alphabet_matrix[row_other][0]
-                elif col_other != 4:
-                    result = result + self.alphabet_matrix[row_other][col_other + 1]
-
-            elif col == col_other:
-                if row == 4:
-                    result = result + self.alphabet_matrix[0][col]
-                elif row != 4:
-                    result = result + self.alphabet_matrix[row + 1][col]
-
-                if row_other == 4:
-                    result = result + self.alphabet_matrix[0][col_other]
-                elif row_other != 4:
-                    result = result + self.alphabet_matrix[row_other + 1][col_other]
-
+            if row1 == row2:
+                col1 = (col1 + 1) % 5
+                col2 = (col2 + 1) % 5
+            elif col1 == col2:
+                row1 = (row1 + 1) % 5
+                row2 = (row2 + 1) % 5
             else:
-                result = result + self.alphabet_matrix[row][col_other]
-                result = result + self.alphabet_matrix[row_other][col]
+                col1, col2 = col2, col1
 
-        return result
+            encrypted_text.append(self.matrix[row1][col1] + self.matrix[row2][col2])
+
+        return "".join(encrypted_text)
 
     def decrypt(self, text):
-        self.key_square_matrix()
-        text = text.replace(" ", "")
-        text = text.upper()
-        result = ""
+        text = text.upper().replace(" ", "")
+        decrypted_text = []
 
-        index = 0
-        word_groups = []
-        while index < len(text):
-            word_groups.append(text[index] + text[index + 1])
-            index += 2
+        for i in range(0, len(text), 2):
+            char1 = text[i]
+            char2 = text[i + 1] if i + 1 < len(text) else 'X'
 
-        cycle = math.ceil(len(text) / 2)
-        for i in range(cycle):
-            row, col = self.alphabet_location(word_groups[i][0])
-            row_other, col_other = self.alphabet_location(word_groups[i][1])
-            if row == row_other:
-                if col == 0:
-                    result = result + self.alphabet_matrix[row][4]
-                elif col != 0:
-                    result = result + self.alphabet_matrix[row][col - 1]
-                
-                if col_other == 0:
-                    result = result + self.alphabet_matrix[row_other][4]
-                elif col_other != 0:
-                    result = result + self.alphabet_matrix[row_other][col_other - 1]
+            row1, col1 = self._get_pos(char1)
+            row2, col2 = self._get_pos(char2)
 
-            elif col == col_other:
-                if row == 0:
-                    result = result + self.alphabet_matrix[4][col]
-                elif row != 0:
-                    result = result + self.alphabet_matrix[row - 1][col]
-
-                if row_other == 0:
-                    result = result + self.alphabet_matrix[4][col_other]
-                elif row_other != 0:
-                    result = result + self.alphabet_matrix[row_other - 1][col_other]
-
+            if row1 == row2:
+                col1 = (col1 - 1) % 5
+                col2 = (col2 - 1) % 5
+            elif col1 == col2:
+                row1 = (row1 - 1) % 5
+                row2 = (row2 - 1) % 5
             else:
-                result = result + self.alphabet_matrix[row][col_other]
-                result = result + self.alphabet_matrix[row_other][col]
-
-        return result
+                col1, col2 = col2, col1
+            decrypted_text.append(self.matrix[row1][col1] + self.matrix[row2][col2])
+        
+        return "".join(decrypted_text)
