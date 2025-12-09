@@ -9,6 +9,7 @@ from encryption.substitution import SubstitutionCipher
 from encryption.playfair import Playfair
 from encryption.aes_lib import AesLib
 from encryption.des_lib import DesLib
+from encryption.rsa_lib import RsaLib
 
 app = Flask(__name__, static_folder="../frontend", static_url_path="/")
 CORS(app)
@@ -79,6 +80,12 @@ def encrypt():
                 return bad_request("Key boş bırakılamaz")
             result = DesLib(key)
             result_text = result.encrypt(message)
+        elif method == "rsa-with-lib":
+            key = data.get("key", "")
+            if not isinstance(key, str) or key.strip() == "":
+                return bad_request("Key boş bırakılamaz")
+            result = RsaLib(key)
+            result_text = result.encrypt(message)
         else:
             return bad_request("Desteklenmeyen method")
         
@@ -145,6 +152,12 @@ def decrypt():
             if not isinstance(key, str) or key.strip() == "":
                 return bad_request("Key boş bırakılamaz")
             result = DesLib(key)
+            result_text = result.decrypt(message)
+        elif method == "rsa-with-lib":
+            key = data.get("key")
+            if not isinstance(key, str) or key.strip() == "":
+                return bad_request("Key boş bırakılamaz")
+            result = RsaLib(key)
             result_text = result.decrypt(message)
         else:
             return bad_request("Desteklenmeyen method")
