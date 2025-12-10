@@ -10,14 +10,15 @@
     const sendBtn = document.getElementById('sendBtn');
     const clearHistoryBtn = document.getElementById('clearHistoryBtn');
     const usernameInput = document.getElementById('username');
+    const genKeyBtn = document.getElementById('genKeyBtn');
+    const privateKeyGroup = document.getElementById('privateKeyGroup');
+    const privateKeyInput = document.getElementById('privateKey');
 
     let socket = null;
 
     async function loadSocketIoClient() {
         return new Promise((resolve, reject) => {
-            if (window.io) {
-                return resolve();
-            }
+            if (window.io) return resolve();
             const s = document.createElement("script");
             s.src = "https://cdn.socket.io/4.8.1/socket.io.min.js";
             s.async = true;
@@ -29,53 +30,75 @@
 
     function handleMethodChange() {
         const method = methodSelect.value;
+        
+        alphabetGroup.style.display = "none";
+        privateKeyGroup.style.display = "none";
+        genKeyBtn.style.display = "none";
+        keyInput.type = "text";
+        keyLabel.textContent = "Anahtar";
+        keyInput.placeholder = "Anahtar giriniz...";
+
         if (method === "substitution") {
             alphabetGroup.style.display = "";
-            keyInput.type = "text";
             keyLabel.textContent = "Büyük Harfler Alfabesi";
         }
-        else{
-            alphabetGroup.style.display = "none";
-            alphabetInput.value = "";
-            keyLabel.textContent = "Anahtar";
-            if (method === "caesar") {
-                keyInput.type = "number";
-            }
-            else{
-                keyInput.type = "text";
-            }
+        else if (method === "caesar") {
+            keyInput.type = "number";
+            keyLabel.textContent = "Kaydırma Miktarı (Sayı)";
+        }
+        else if (method === "rsa-with-lib") {
+            keyLabel.textContent = "Public Key (Şifreleme İçin)";
+            keyInput.placeholder = "Public Key buraya...";
+            genKeyBtn.style.display = "block";
+            privateKeyGroup.style.display = "block";
+        }
+        else if (method.includes("aes") || method.includes("des")) {
+            keyLabel.textContent = `Anahtar (${method.includes("aes") ? "16" : "8"} karakter)`;
         }
     }
 
     methodSelect.addEventListener("change", handleMethodChange);
     handleMethodChange();
 
+    window.generateRSAKeys = async function() {
+        genKeyBtn.textContent = "Üretiliyor...";
+        genKeyBtn.disabled = true;
+        try {
+            const resp = await fetch("/generate-keys");
+            const json = await resp.json();
+            if(json.error) {
+                alert("Hata: " + json.error);
+            } else {
+                keyInput.value = json.public_key;
+                privateKeyInput.value = json.private_key;
+            }
+        } catch(e) {
+            alert("Anahtar üretilirken hata oluştu");
+            console.error(e);
+        } finally {
+            genKeyBtn.textContent = "RSA Anahtar Çifti Oluştur";
+            genKeyBtn.disabled = false;
+        }
+    };
+
     function timeNow() {
         const d = new Date();
-        const hh = String(d.getHours()).padStart(2, "0");
-        const mm = String(d.getMinutes()).padStart(2, "0");
-        return `${hh}:${mm}`;
+        return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
     }
 
     function timeFromEpoch(epochMs) {
         try {
             const d = new Date(Number(epochMs));
-            return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-        } 
-        catch (e) {
-            return timeNow();
-        }
+            return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+        } catch (e) { return timeNow(); }
     }
-
 
     function appendMessage({id, sender, direction, cipher, method, alphabet, ts}) {
         const li = document.createElement("li");
         li.className = `message-item ${direction}`;
         li.dataset.cipher = cipher;
         li.dataset.method = method || "";
-        if (alphabet) {
-            li.dataset.alphabet = alphabet;
-        }
+        if (alphabet) li.dataset.alphabet = alphabet;
         li.id = id;
 
         const header = document.createElement("div");
@@ -113,210 +136,179 @@
 
         messageList.appendChild(li);
         messageList.scrollTop = messageList.scrollHeight;
+        
+        if (showDecrypted.checked) {
+             decryptSingleMessage(id);
+        }
     }
 
     function restoreCipher(id) {
         const li = document.getElementById(id);
-        if (!li) {
-            return;
-        }
+        if (!li) return;
+        
         const cipher = li.dataset.cipher;
-        const content = li.querySelector(".msg-content");
-        if (content) {
-            content.textContent = cipher;
-        }
-        const restoreBtn = li.querySelector(".restore-btn");
-        const decryptBtn = li.querySelector(".decrypt-btn");
-        if (restoreBtn) {
-            restoreBtn.style.display = "none";
-        }
-        if (decryptBtn) {
-            decryptBtn.style.display = "";
-        }
+        li.querySelector(".msg-content").textContent = cipher;
+        li.querySelector(".restore-btn").style.display = "none";
+        li.querySelector(".decrypt-btn").style.display = "";
         li.dataset.decrypted = "false";
     }
 
     async function decryptSingleMessage(id) {
         const li = document.getElementById(id);
-        if (!li) {
-            return;
-        }
+        if (!li) return;
+
         const cipher = li.dataset.cipher;
         const method = li.dataset.method || methodSelect.value;
         const alphabet = li.dataset.alphabet || alphabetInput.value;
+        
+        let keyToSend = keyInput.value || "";
+        if (method === "rsa-with-lib") {
+            keyToSend = privateKeyInput.value || "";
+            if(!keyToSend) {
+                alert("RSA mesajını çözmek için Private Key gerekli!");
+                return;
+            }
+        }
 
-        try{
-            const payload = {message: cipher, method: method, key: keyInput.value || "", alphabet: alphabet};
+        try {
+            const payload = {
+                message: cipher, 
+                method: method, 
+                key: keyToSend, 
+                alphabet: alphabet
+            };
+            
             const resp = await fetch("/decrypt", {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify(payload),
             });
+            
             const json = await resp.json();
             if (!resp.ok) {
-                alert(json.error || "Deşifreleme başarısız oldu");
+                console.warn(json.error);
                 return;
             }
+            
             const plaintext = json.decrypted_message;
-            const content = li.querySelector(".msg-content");
-            content.textContent = plaintext;
+            li.querySelector(".msg-content").textContent = plaintext;
             li.dataset.decrypted = "true";
             li.querySelector(".decrypt-btn").style.display = "none";
             li.querySelector(".restore-btn").style.display = "";
-        }
-        catch(err){
+        } catch(err) {
             console.error(err);
-            alert("Deşifreleme sırasında hata oluştu");
         }
     }
-
-    async function toggleShowAllDecrypted() {
-        const shouldShow = showDecrypted.checked;
-        const items = Array.from(messageList.querySelectorAll(".message-item"));
-        for (const li of items) {
-            if (shouldShow) {
-                if (li.dataset.decrypted === "true") {
-                    continue;
-                }
-                const cipher = li.dataset.cipher;
-                const method = li.dataset.method || methodSelect.value;
-                const alphabet = li.dataset.alphabet || alphabetInput.value;
-                try{
-                    const resp = await fetch("/decrypt", {
-                        method: "POST",
-                        headers: {"Content-Type": "application/json"},
-                        body: JSON.stringify({message: cipher, method: method, key: keyInput.value || "", alphabet: alphabet}),
-                    });
-                    const json = await resp.json();
-                    if (resp.ok && json.decrypted_message !== undefined) {
-                        li.querySelector(".msg-content").textContent = json.decrypted_message;
-                        li.dataset.decrypted = "true";
-                        li.querySelector(".decrypt-btn").style.display = "none";
-                        li.querySelector(".restore-btn").style.display = "";
-                    }
-                    else{
-                        console.warn("Hata: ", json);
-                    }
-                }
-                catch(e){
-                    console.warn("Hata: ", e);
-                }
-            }
-            else{
-                restoreCipher(li.id);
-            }
-        }
-    }
-
-    showDecrypted.addEventListener("change", toggleShowAllDecrypted);
 
     async function processMessage() {
         const method = methodSelect.value;
         const key = keyInput.value;
         const message = messageInput.value.trim();
         const alphabet = alphabetInput.value;
-        const usernameTemp = (usernameInput && usernameInput.value ? usernameInput.value.trim() : "user_guest");
+        const usernameTemp = usernameInput.value.trim() || "user_guest";
 
-        if (!message) {
-            alert("Mesaj boş olamaz");
-            return;
-        }
+        if (!message) { alert("Mesaj boş olamaz"); return; }
 
-        if (method === "caesar") {
-            if (key === "" || isNaN(Number(key))) {
-                alert("Anahtar bir sayı olmalıdır");
-                return;
-            }
+        if (method === "caesar" && (key === "" || isNaN(Number(key)))) {
+            alert("Sezar için sayısal anahtar gerekli"); return;
         }
-        if(method === "vigenere" || method === "playfair"){
-            if(!key || key.trim() === ""){
-                alert("Anahtar boş olamaz");
-                return;
-            }
-        }
-        if (method === "substitution") {
-            if(!key || key.trim() === ""){
-                alert("Büyük harfler alfabesi boş olamaz");
-                return;
-            }
-            if (!alphabet || alphabet.trim() === "") {
-                alert("Küçük harfler alfabesi boş bırakılamaz");
-                return;
-            }
+        if (method === "rsa-with-lib" && !key) {
+             alert("RSA için Public Key gerekli (Anahtar Oluştur butonunu kullanın)"); return;
         }
         
-        try{
-            const payload = {message: message, method: method, key: key, alphabet: alphabet};
+        try {
+            const payload = {message, method, key, alphabet};
+            
             const resp = await fetch("/encrypt", {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify(payload),
             });
+            
             const json = await resp.json();
             if (!resp.ok) {
-                alert(json.error || "Şifreleme isteği başarısız");
+                alert(json.error || "Şifreleme başarısız");
                 return;
             }
+            
             const cipher = json.encrypted_message;
             const id = "m-" + Date.now() + "-" + Math.floor(Math.random() * 10000);
-            appendMessage({id, sender: usernameTemp, direction: "sent", cipher, method, alphabet, ts: timeNow()});
+            
+            appendMessage({
+                id, 
+                sender: usernameTemp, 
+                direction: "sent", 
+                cipher, 
+                method, 
+                alphabet, 
+                ts: timeNow()
+            });
+            
             if (socket) {
-                socket.emit("send_cipher", {method: method, encrypted_message: cipher, sender: usernameTemp, ts: Date.now()});
-            }
-            else{
+                socket.emit("send_cipher", {
+                    method: method, 
+                    encrypted_message: cipher, 
+                    sender: usernameTemp, 
+                    ts: Date.now()
+                });
+            } else {
                 console.warn("Socket bağlı değil");
             }
+            
             messageInput.value = "";
-        }
-        catch(err){
+            
+        } catch(err) {
             console.error(err);
-            alert("Şifreleme isteği sırasında hata çıktı");
+            alert("İşlem sırasında hata oluştu");
         }
     }
-
+    
     function setupSocketHandlers() {
-        if (!socket) {
-            return;
-        }
-        socket.on("connect", () => {
-            console.log("Socket.IO bağlı: ", socket.id);
-        });
-        socket.on("disconnect", () => {
-            console.log("Socket.IO bağlantısı koptu");
-        });
+        if (!socket) return;
+        
+        socket.on("connect", () => console.log("Bağlandı: ", socket.id));
+        
         socket.on("recv_cipher", (data) => {
-            if (!data) {
-                return;
-            }
-            const method = data.method || methodSelect.value;
-            const cipher = data.encrypted_message || data.cipher || data.message || data;
+            if (!data) return;
+            const method = data.method || "caesar";
+            const cipher = data.encrypted_message || data.cipher;
             const id = "m-" + Date.now() + "-" + Math.floor(Math.random() * 10000);
             const ts = data.ts ? timeFromEpoch(data.ts) : timeNow();
-            const sender = data.sender || "user_guest";
-            appendMessage({id, sender:sender, direction: "received", cipher, method, alphabet: alphabetInput.value, ts: ts});
+            const sender = data.sender || "Anonim";
+            
+            appendMessage({
+                id, 
+                sender, 
+                direction: "received", 
+                cipher, 
+                method, 
+                alphabet: "",
+                ts
+            });
         });
     }
 
-    function clearHistory(){
-        messageList.innerHTML = "";
-    }
+    function clearHistory(){ messageList.innerHTML = ""; }
 
     sendBtn.addEventListener("click", processMessage);
     clearHistoryBtn.addEventListener("click", clearHistory);
+    showDecrypted.addEventListener("change", () => {
+        const items = messageList.querySelectorAll(".message-item");
+        if(showDecrypted.checked) {
+            items.forEach(li => {
+                if(li.dataset.decrypted !== "true") decryptSingleMessage(li.id);
+            });
+        } else {
+            items.forEach(li => restoreCipher(li.id));
+        }
+    });
 
     (async function init() {
-        try{
+        try {
             await loadSocketIoClient();
             socket = window.io ? window.io() : null;
-            if (!socket) {
-                console.warn("Socket.IO global 'io' bulunamadı");
-            }
-            else{
-                setupSocketHandlers();
-            }
-        }
-        catch(err){
-            console.warn("Socket.IO hatası: ", err);
-        }
+            if (socket) setupSocketHandlers();
+        } catch(err) { console.warn("Socket hatası: ", err); }
     })();
+
 })();

@@ -22,15 +22,23 @@
                 <option value="vigenere">Vigenere Şifreleme</option>
                 <option value="substitution">Substitution Şifreleme</option>
                 <option value="playfair">Playfair Şifreleme</option>
-                <option value="aes-with-lib">AES Şifreleme(Kütüphaneli)</option>
-                <option value="des-with-lib">DES Şifreleme(Kütüphaneli)</option>
-                <option value="rsa-with-lib">RSA Şifreleme(Kütüphaneli)</option>
+                <option value="aes-with-lib">AES (Kütüphaneli)</option>
+                <option value="des-with-lib">DES (Kütüphaneli)</option>
+                <option value="rsa-with-lib">RSA (Kütüphaneli)</option>
             </select>
         </div>
 
         <div class="form-group">
             <label id="keyLabel">Anahtar(Substitution için büyük alfabe)</label>
-            <input type="text" id="key">
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="key">
+                <button id="genKeyBtn" style="display: none; width: auto; white-space: nowrap; padding: 0 15px; margin: 0;" onclick="generateKeys()"></button>
+            </div>
+        </div>
+
+        <div class="form-group" id="privateKeyGroup" style="display: none;">
+            <label style="color: #d63031;">Private Key (Deşifreleme İçin)</label>
+            <textarea id="privateKey" rows="3" placeholder="Private Key buraya gelecek..."></textarea>
         </div>
 
         <div class="form-group" id="alphabetGroup" style="display: none;">

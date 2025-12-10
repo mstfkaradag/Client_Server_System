@@ -157,7 +157,7 @@ def decrypt():
             key = data.get("key")
             if not isinstance(key, str) or key.strip() == "":
                 return bad_request("Key boş bırakılamaz")
-            result = RsaLib(key)
+            result = RsaLib(key, is_private=True)
             result_text = result.decrypt(message)
         else:
             return bad_request("Desteklenmeyen method")
@@ -167,6 +167,17 @@ def decrypt():
     
 
     return jsonify({"decrypted_message": result_text})
+
+@app.route("/generate-keys", methods=["GET"])
+def generate_keys():
+    try:
+        private_k, public_k = RsaLib.generate_keys()
+        return jsonify({
+            "private_key": private_k,
+            "public_key": public_k
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @socketio.on("send_cipher")
 def handle_send_cipher(data):
