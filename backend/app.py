@@ -90,7 +90,7 @@ def encrypt():
             return bad_request("Desteklenmeyen method")
         
     except Exception as e:
-        return jsonify({"error": "Şifreleme esnasında hata oluştu: " + str(e)})
+        return jsonify({"error": "Şifreleme esnasında hata oluştu: " + str(e)}), 400
     
 
     return jsonify({"encrypted_message": result_text})
@@ -163,7 +163,7 @@ def decrypt():
             return bad_request("Desteklenmeyen method")
         
     except Exception as e:
-        return jsonify({"error": "Deşifreleme esnasında hata oluştu: " + str(e)})
+        return jsonify({"error": "Deşifreleme esnasında hata oluştu: " + str(e)}), 400
     
 
     return jsonify({"decrypted_message": result_text})

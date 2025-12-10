@@ -34,26 +34,28 @@
         alphabetGroup.style.display = "none";
         privateKeyGroup.style.display = "none";
         genKeyBtn.style.display = "none";
-        keyInput.type = "text";
+
         keyLabel.textContent = "Anahtar";
         keyInput.placeholder = "Anahtar giriniz...";
 
         if (method === "substitution") {
             alphabetGroup.style.display = "";
             keyLabel.textContent = "Büyük Harfler Alfabesi";
+            keyInput.placeholder = "Alfabe giriniz...";
         }
         else if (method === "caesar") {
-            keyInput.type = "number";
-            keyLabel.textContent = "Kaydırma Miktarı (Sayı)";
+            keyLabel.textContent = "Anahtar (Sayı)";
+            keyInput.placeholder = "Örn: 3";
         }
         else if (method === "rsa-with-lib") {
             keyLabel.textContent = "Public Key (Şifreleme İçin)";
-            keyInput.placeholder = "Public Key buraya...";
+            keyInput.placeholder = "-----BEGIN PUBLIC KEY----- ...";
             genKeyBtn.style.display = "block";
             privateKeyGroup.style.display = "block";
         }
         else if (method.includes("aes") || method.includes("des")) {
             keyLabel.textContent = `Anahtar (${method.includes("aes") ? "16" : "8"} karakter)`;
+            keyInput.placeholder = "Anahtar giriniz...";
         }
     }
 
