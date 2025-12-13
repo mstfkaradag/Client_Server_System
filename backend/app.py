@@ -10,6 +10,7 @@ from encryption.playfair import Playfair
 from encryption.aes_lib import AesLib
 from encryption.des_lib import DesLib
 from encryption.rsa_lib import RsaLib
+from encryption.des_manual import DesManual
 
 app = Flask(__name__, static_folder="../frontend", static_url_path="/")
 CORS(app)
@@ -46,6 +47,12 @@ def encrypt():
             except ValueError:
                 return bad_request("Key bir sayı olmalıdır")
             result = CaesarCipher(key)
+            result_text = result.encrypt(message)
+        elif method == "des-manual":
+            key = data.get("key", "")
+            if not isinstance(key, str) or key.strip() == "": 
+                return bad_request("Key gerekli")
+            result = DesManual(key)
             result_text = result.encrypt(message)
         elif method == "vigenere":
             key = data.get("key", "")
@@ -119,6 +126,12 @@ def decrypt():
             except ValueError:
                 return bad_request("Key bir sayı olmalıdır")
             result = CaesarCipher(key)
+            result_text = result.decrypt(message)
+        elif method == "des-manual":
+            key = data.get("key", "")
+            if not isinstance(key, str) or key.strip() == "": 
+                return bad_request("Key gerekli")
+            result = DesManual(key)
             result_text = result.decrypt(message)
         elif method == "vigenere":
             key = data.get("key", "")
