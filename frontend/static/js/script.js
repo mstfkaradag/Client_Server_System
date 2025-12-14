@@ -43,7 +43,8 @@
             keyLabel.textContent = "Büyük Harfler Alfabesi";
             keyInput.placeholder = "Alfabe giriniz...";
         }
-        else if (method === "caesar") {
+        else if (method === "caesar" || method === "railfence") {
+            keyInput.type = "number";
             keyLabel.textContent = "Anahtar (Sayı)";
             keyInput.placeholder = "Örn: 3";
         }
@@ -217,6 +218,9 @@
 
         if (method === "caesar" && (key === "" || isNaN(Number(key)))) {
             alert("Sezar için sayısal anahtar gerekli"); return;
+        }
+        if (method === "rail-fence" && (key === "" || isNaN(Number(key)))) {
+            alert("Rail Fence için sayısal anahtar gerekli"); return;
         }
         if (method === "rsa-with-lib" && !key) {
              alert("RSA için Public Key gerekli (Anahtar Oluştur butonunu kullanın)"); return;

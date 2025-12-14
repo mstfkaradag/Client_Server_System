@@ -11,6 +11,7 @@ from encryption.aes_lib import AesLib
 from encryption.des_lib import DesLib
 from encryption.rsa_lib import RsaLib
 from encryption.des_manual import DesManual
+from encryption.rail_fence import RailFenceCipher
 
 app = Flask(__name__, static_folder="../frontend", static_url_path="/")
 CORS(app)
@@ -47,6 +48,16 @@ def encrypt():
             except ValueError:
                 return bad_request("Key bir sayı olmalıdır")
             result = CaesarCipher(key)
+            result_text = result.encrypt(message)
+        elif method == "rail-fence":
+            key = data.get("key")
+            if key is None:
+                return bad_request("Key boş bırakılamaz")
+            try:
+                key = int(key)
+            except ValueError:
+                return bad_request("Key bir sayı olmalıdır")
+            result = RailFenceCipher(key)
             result_text = result.encrypt(message)
         elif method == "des-manual":
             key = data.get("key", "")
@@ -126,6 +137,16 @@ def decrypt():
             except ValueError:
                 return bad_request("Key bir sayı olmalıdır")
             result = CaesarCipher(key)
+            result_text = result.decrypt(message)
+        elif method == "rail-fence":
+            key = data.get("key")
+            if key is None:
+                return bad_request("Key boş bırakılamaz")
+            try:
+                key = int(key)
+            except ValueError:
+                return bad_request("Key bir sayı olmalıdır")
+            result = RailFenceCipher(key)
             result_text = result.decrypt(message)
         elif method == "des-manual":
             key = data.get("key", "")
