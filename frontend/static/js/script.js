@@ -47,6 +47,9 @@
             keyLabel.textContent = "Anahtar (Sayı)";
             keyInput.placeholder = "Örn: 3";
         }
+        else if (method === "columnar" || method === "vigenere" || method === "playfair") {
+            keyLabel.textContent = "Anahtar (Kelime)";
+        }
         else if (method === "rsa-with-lib") {
             keyLabel.textContent = "Public Key (Şifreleme İçin)";
             keyInput.placeholder = "-----BEGIN PUBLIC KEY----- ...";

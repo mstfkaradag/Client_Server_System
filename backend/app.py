@@ -13,6 +13,7 @@ from encryption.rsa_lib import RsaLib
 from encryption.des_manual import DesManual
 from encryption.rail_fence import RailFenceCipher
 from encryption.route import RouteCipher
+from encryption.columnar import ColumnarTransposition
 
 app = Flask(__name__, static_folder="../frontend", static_url_path="/")
 CORS(app)
@@ -81,6 +82,12 @@ def encrypt():
             if not isinstance(key, str) or key.strip() == "":
                 return bad_request("Key boş bırakılamaz")
             result = VigenereCipher(key)
+            result_text = result.encrypt(message)
+        elif method == "columnar":
+            key = data.get("key", "")
+            if not isinstance(key, str) or key.strip() == "":
+                return bad_request("Key boş bırakılamaz")
+            result = ColumnarTransposition(key)
             result_text = result.encrypt(message)
         elif method == "substitution":
             key = data.get("key")
@@ -168,6 +175,12 @@ def decrypt():
             except ValueError:
                 return bad_request("Key bir sayı olmalıdır")
             result = RouteCipher(key)
+            result_text = result.decrypt(message)
+        elif method == "columnar":
+            key = data.get("key", "")
+            if not isinstance(key, str) or key.strip() == "":
+                return bad_request("Key boş bırakılamaz")
+            result = ColumnarTransposition(key)
             result_text = result.decrypt(message)
         elif method == "des-manual":
             key = data.get("key", "")
