@@ -43,8 +43,7 @@
             keyLabel.textContent = "Büyük Harfler Alfabesi";
             keyInput.placeholder = "Alfabe giriniz...";
         }
-        else if (method === "caesar" || method === "railfence") {
-            keyInput.type = "number";
+        else if (method === "caesar" || method === "rail-fence" || method === "route") {
             keyLabel.textContent = "Anahtar (Sayı)";
             keyInput.placeholder = "Örn: 3";
         }
