@@ -34,23 +34,35 @@
         alphabetGroup.style.display = "none";
         privateKeyGroup.style.display = "none";
         genKeyBtn.style.display = "none";
-
+        
+        keyInput.style.display = ""; 
+        keyLabel.style.display = "";
         keyLabel.textContent = "Anahtar";
         keyInput.placeholder = "Anahtar giriniz...";
+        keyInput.type = "text"; 
 
-        if (method === "substitution") {
+        if (method === "pigpen") {
+            keyInput.style.display = "none";
+            keyLabel.style.display = "none";
+        }
+        else if (method === "substitution") {
             alphabetGroup.style.display = "";
             keyLabel.textContent = "Büyük Harfler Alfabesi";
             keyInput.placeholder = "Alfabe giriniz...";
         }
-        else if (method === "caesar" || method === "rail-fence" || method === "route") {
-            keyLabel.textContent = "Anahtar (Sayı)";
+        else if (method === "caesar" || method === "railfence" || method === "route") {
+            keyInput.type = "number";
+            if (method === "caesar") keyLabel.textContent = "Kaydırma Miktarı (Sayı)";
+            else if (method === "railfence") keyLabel.textContent = "Ray Sayısı (Sayı)";
+            else if (method === "route") keyLabel.textContent = "Sütun Sayısı (Sayı)";
             keyInput.placeholder = "Örn: 3";
         }
         else if (method === "columnar" || method === "vigenere" || method === "playfair") {
             keyLabel.textContent = "Anahtar (Kelime)";
+            keyInput.placeholder = "Örn: TRUVA";
         }
         else if (method === "rsa-with-lib") {
+            keyInput.type = "text"; 
             keyLabel.textContent = "Public Key (Şifreleme İçin)";
             keyInput.placeholder = "-----BEGIN PUBLIC KEY----- ...";
             genKeyBtn.style.display = "block";
@@ -102,6 +114,23 @@
         } catch (e) { return timeNow(); }
     }
 
+    function renderPigpenImages(cipherString) {
+        if(!cipherString) return "";
+        const parts = cipherString.split(',');
+        let html = "";
+        
+        parts.forEach(part => {
+            if (part.endsWith(".png")) {
+                html += `<img src="/static/images/pigpen/${part}" class="pigpen-char" alt="${part[0]}">`;
+            } else if (part === "space") {
+                html += `<span style="display:inline-block; width: 15px;"></span>`;
+            } else {
+                html += `<span style="font-size: 1.2em; font-weight: bold; margin: 0 2px;">${part}</span>`;
+            }
+        });
+        return html;
+    }
+
     function appendMessage({id, sender, direction, cipher, method, alphabet, ts}) {
         const li = document.createElement("li");
         li.className = `message-item ${direction}`;
@@ -118,9 +147,18 @@
         headerText += ` • ${ts || timeNow()}`;
         header.textContent = headerText;
 
-        const content = document.createElement("pre");
+        const content = document.createElement("div");
         content.className = "msg-content";
-        content.textContent = cipher;
+
+        if (method === "pigpen" && li.dataset.decrypted !== "true") {
+            content.innerHTML = renderPigpenImages(cipher);
+            content.style.display = "flex";
+            content.style.flexWrap = "wrap";
+            content.style.gap = "2px";
+            content.style.alignItems = "center";
+        } else {
+            content.textContent = cipher;
+        }
 
         const controls = document.createElement("div");
         controls.className = "msg-controls";
@@ -156,7 +194,15 @@
         if (!li) return;
         
         const cipher = li.dataset.cipher;
-        li.querySelector(".msg-content").textContent = cipher;
+        const method = li.dataset.method;
+        const content = li.querySelector(".msg-content");
+
+        if (method === "pigpen") {
+            content.innerHTML = renderPigpenImages(cipher);
+        } else {
+            content.textContent = cipher;
+        }
+        
         li.querySelector(".restore-btn").style.display = "none";
         li.querySelector(".decrypt-btn").style.display = "";
         li.dataset.decrypted = "false";
@@ -200,7 +246,10 @@
             }
             
             const plaintext = json.decrypted_message;
-            li.querySelector(".msg-content").textContent = plaintext;
+            const content = li.querySelector(".msg-content");
+            content.innerHTML = "";
+            content.textContent = plaintext;
+            
             li.dataset.decrypted = "true";
             li.querySelector(".decrypt-btn").style.display = "none";
             li.querySelector(".restore-btn").style.display = "";
@@ -218,14 +267,13 @@
 
         if (!message) { alert("Mesaj boş olamaz"); return; }
 
-        if (method === "caesar" && (key === "" || isNaN(Number(key)))) {
-            alert("Sezar için sayısal anahtar gerekli"); return;
-        }
-        if (method === "rail-fence" && (key === "" || isNaN(Number(key)))) {
-            alert("Rail Fence için sayısal anahtar gerekli"); return;
-        }
-        if (method === "rsa-with-lib" && !key) {
-             alert("RSA için Public Key gerekli (Anahtar Oluştur butonunu kullanın)"); return;
+        if (method !== "pigpen") {
+            if ((method === "caesar" || method === "railfence" || method === "route") && (key === "" || isNaN(Number(key)))) {
+                alert("Bu yöntem için sayısal anahtar gerekli"); return;
+            }
+            if (method === "rsa-with-lib" && !key) {
+                 alert("RSA için Public Key gerekli"); return;
+            }
         }
         
         try {

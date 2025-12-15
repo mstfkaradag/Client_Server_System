@@ -14,6 +14,7 @@ from encryption.des_manual import DesManual
 from encryption.rail_fence import RailFenceCipher
 from encryption.route import RouteCipher
 from encryption.columnar import ColumnarTransposition
+from encryption.pigpen import PigpenCipher
 
 app = Flask(__name__, static_folder="../frontend", static_url_path="/")
 CORS(app)
@@ -76,6 +77,9 @@ def encrypt():
             if not isinstance(key, str) or key.strip() == "": 
                 return bad_request("Key gerekli")
             result = DesManual(key)
+            result_text = result.encrypt(message)
+        elif method == "pigpen":
+            result = PigpenCipher()
             result_text = result.encrypt(message)
         elif method == "vigenere":
             key = data.get("key", "")
@@ -155,6 +159,9 @@ def decrypt():
             except ValueError:
                 return bad_request("Key bir sayı olmalıdır")
             result = CaesarCipher(key)
+            result_text = result.decrypt(message)
+        elif method == "pigpen":
+            result = PigpenCipher()
             result_text = result.decrypt(message)
         elif method == "rail-fence":
             key = data.get("key")
