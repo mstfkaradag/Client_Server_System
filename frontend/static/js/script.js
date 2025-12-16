@@ -61,6 +61,10 @@
             keyLabel.textContent = "Anahtar (Kelime)";
             keyInput.placeholder = "Örn: TRUVA";
         }
+        else if (method === "hill") {
+            keyLabel.textContent = "Matris Anahtarı (Boşlukla ayırın)";
+            keyInput.placeholder = "Örn 2x2 için: 3 3 2 5";
+        }
         else if (method === "rsa-with-lib") {
             keyInput.type = "text"; 
             keyLabel.textContent = "Public Key (Şifreleme İçin)";

@@ -15,6 +15,7 @@ from encryption.rail_fence import RailFenceCipher
 from encryption.route import RouteCipher
 from encryption.columnar import ColumnarTransposition
 from encryption.pigpen import PigpenCipher
+from encryption.hill import HillCipher
 
 app = Flask(__name__, static_folder="../frontend", static_url_path="/")
 CORS(app)
@@ -51,6 +52,12 @@ def encrypt():
             except ValueError:
                 return bad_request("Key bir sayı olmalıdır")
             result = CaesarCipher(key)
+            result_text = result.encrypt(message)
+        elif method == "hill":
+            key = data.get("key", "")
+            if not key:
+                return bad_request("Matris anahtarı gerekli")
+            result = HillCipher(key)
             result_text = result.encrypt(message)
         elif method == "rail-fence":
             key = data.get("key")
@@ -162,6 +169,12 @@ def decrypt():
             result_text = result.decrypt(message)
         elif method == "pigpen":
             result = PigpenCipher()
+            result_text = result.decrypt(message)
+        elif method == "hill":
+            key = data.get("key", "")
+            if not key:
+                return bad_request("Matris anahtarı gerekli")
+            result = HillCipher(key)
             result_text = result.decrypt(message)
         elif method == "rail-fence":
             key = data.get("key")
