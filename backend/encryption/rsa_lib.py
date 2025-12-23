@@ -14,7 +14,7 @@ class RsaLib(Cipher):
                 self.rsa_key = RSA.import_key(self.key)
                 self.cipher_rsa = PKCS1_OAEP.new(self.rsa_key)
             except Exception as e:
-                pass
+                return f"RSA Şifreleme hatası: {str(e)}"
         
     def encrypt(self, text):
         if not self.cipher_rsa:

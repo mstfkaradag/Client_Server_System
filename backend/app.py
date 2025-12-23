@@ -271,5 +271,13 @@ def generate_keys():
 def handle_send_cipher(data):
     emit("recv_cipher", data, broadcast=True, include_self=False)
 
+@socketio.on("send_cipher")
+def handle_send_cipher(data):
+    emit("recv_cipher", data, broadcast=True, include_self=False)
+
+@socketio.on("send_file")
+def handle_send_file(data):
+    emit("recv_file", data, broadcast=True, include_self=False)
+
 if __name__ == "__main__":
     socketio.run(app, host="0.0.0.0", port=5000, debug=True)

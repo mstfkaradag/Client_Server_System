@@ -53,6 +53,15 @@
             <input type="text" id="alphabet">
         </div>
 
+        <div class="form-group" id="fileUploadContainer" style="display: none; background: rgba(255,255,255,0.8); padding: 15px; border-radius: 12px; border: 2px dashed #ccc;">
+            <label>🔒 Şifreli Dosya Gönder (PNG, TXT, DOCX)</label>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <input type="file" id="fileInput" accept=".txt,.png,.docx,.doc,.jpg,.jpeg">
+                <button id="sendFileBtn" onclick="processFile()" style="width: auto; margin:0; flex-grow: 1;">Yükle ve Şifrele</button>
+            </div>
+            <small style="color: #666; font-size: 0.8em;">Sadece AES, DES ve RSA modlarında aktiftir.</small>
+        </div>
+
         <div class="form-group">
             <label>Mesaj Geçmişi</label>
             <ul id="messageList" class="message-list"></ul>
@@ -60,7 +69,7 @@
 
         <div class="form-group">
             <label>Mesaj</label>
-            <textarea name="message" id="message" rows="4"></textarea>
+            <textarea name="message" id="message" rows="4" placeholder="Mesajınızı buraya yazın..."></textarea>
         </div>
 
         <div class="form-group">
@@ -72,7 +81,6 @@
 
         <button id="sendBtn" onclick="processMessage()">Gönder</button>
         <button id="clearHistoryBtn" onclick="clearHistory()">Geçmişi Temizle</button>
-
     </div>
 
     <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"
