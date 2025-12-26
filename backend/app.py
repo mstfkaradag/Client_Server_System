@@ -1,4 +1,5 @@
 import os
+import time
 from flask import Flask, request, send_from_directory, jsonify
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
@@ -20,6 +21,7 @@ from encryption.hill import HillCipher
 from encryption.aes_manual import AesManual
 
 app = Flask(__name__, static_folder="../frontend", static_url_path="/")
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
@@ -43,6 +45,8 @@ def encrypt():
         return bad_request("Method girmediniz")
     if message is None:
         return bad_request("Mesaj giriniz")
+
+    start_time = time.time()
 
     try:
         if method == "caesar":
@@ -152,8 +156,13 @@ def encrypt():
     except Exception as e:
         return jsonify({"error": "Şifreleme esnasında hata oluştu: " + str(e)}), 400
     
+    end_time = time.time()
+    duration = end_time - start_time
 
-    return jsonify({"encrypted_message": result_text})
+    return jsonify({
+        "encrypted_message": result_text,
+        "duration": duration
+    })
 
 @app.route("/decrypt", methods = ["POST"])
 def decrypt():
@@ -168,6 +177,8 @@ def decrypt():
         return bad_request("Method girmediniz")
     if message is None:
         return bad_request("Mesaj giriniz")
+
+    start_time = time.time()
 
     try:
         if method == "caesar":
@@ -254,19 +265,19 @@ def decrypt():
             result = Playfair(key)
             result_text = result.decrypt(message)
         elif method == "aes-with-lib":
-            key = data.get("key")
+            key = data.get("key", "")
             if not isinstance(key, str) or key.strip() == "":
                 return bad_request("Key boş bırakılamaz")
             result = AesLib(key)
             result_text = result.decrypt(message)
         elif method == "des-with-lib":
-            key = data.get("key")
+            key = data.get("key", "")
             if not isinstance(key, str) or key.strip() == "":
                 return bad_request("Key boş bırakılamaz")
             result = DesLib(key)
             result_text = result.decrypt(message)
         elif method == "rsa-with-lib":
-            key = data.get("key")
+            key = data.get("key", "")
             if not isinstance(key, str) or key.strip() == "":
                 return bad_request("Key boş bırakılamaz")
             result = RsaLib(key, is_private=True)
@@ -277,22 +288,33 @@ def decrypt():
     except Exception as e:
         return jsonify({"error": "Deşifreleme esnasında hata oluştu: " + str(e)}), 400
     
+    end_time = time.time()
+    duration = end_time - start_time
 
-    return jsonify({"decrypted_message": result_text})
+    return jsonify({
+        "decrypted_message": result_text,
+        "duration": duration
+    })
 
 @app.route("/generate-keys", methods=["GET"])
 def generate_keys():
     try:
-        algo = request.args.get('algo', 'rsa') 
+        algo = request.args.get('algo', 'rsa')
         
+        start_time = time.time()
+
         if algo == 'ecc':
             private_k, public_k = EccLib.generate_keys()
         else:
             private_k, public_k = RsaLib.generate_keys()
             
+        end_time = time.time()
+        duration = end_time - start_time
+
         return jsonify({
             "private_key": private_k,
-            "public_key": public_k
+            "public_key": public_k,
+            "duration": duration
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500

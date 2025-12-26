@@ -15,8 +15,19 @@
     const privateKeyInput = document.getElementById('privateKey');
     const fileInput = document.getElementById('fileInput');
     const fileUploadContainer = document.getElementById('fileUploadContainer');
+    
+    const perfBox = document.getElementById('perfBox');
+    const perfTime = document.getElementById('perfTime');
+    const perfMethod = document.getElementById('perfMethod');
 
     let socket = null;
+
+    function showPerformance(duration, method, type) {
+        if (!perfBox) return;
+        perfBox.style.display = "block";
+        perfTime.textContent = duration.toFixed(6) + " sn";
+        perfMethod.textContent = `${method} (${type})`;
+    }
 
     async function loadSocketIoClient() {
         return new Promise((resolve, reject) => {
@@ -87,7 +98,7 @@
             keyLabel.textContent = `Anahtar (${method.includes("aes") ? "16" : "8"} karakter)`;
             keyInput.placeholder = "Anahtar giriniz...";
         }
-        else if (method === "des-manual") {
+        else if (method === "des-manual" || method === "aes-manual") {
             keyLabel.textContent = "Anahtar (İlk 10 bit kullanılır)";
             keyInput.placeholder = "Anahtar giriniz...";
         }
@@ -111,6 +122,7 @@
             else {
                 keyInput.value = json.public_key;
                 privateKeyInput.value = json.private_key;
+                if(json.duration) showPerformance(json.duration, (algo === "ecc" ? "ECC" : "RSA"), "Anahtar Üretimi");
             }
         } catch(e) { alert("Hata: " + e); } 
         finally {
@@ -138,8 +150,8 @@
         if ((method.includes("aes") || method.includes("des")) && !key) { alert("Anahtar gerekli!"); return; }
         if ((method === "rsa-with-lib" || method === "ecc-with-lib") && !key) { alert("Public Key gerekli!"); return; }
 
-        if (file.size > 10 * 1024 * 1024) { 
-            alert("Dosya boyutu çok büyük! (Max 10MB)");
+        if (file.size > 16 * 1024 * 1024) { 
+            alert("Dosya boyutu çok büyük! (Max 16MB)");
             return;
         }
 
@@ -164,6 +176,8 @@
                     alert("Şifreleme hatası: " + (json.error || "Bilinmiyor"));
                     return;
                 }
+
+                if(json.duration) showPerformance(json.duration, method, "Dosya Şifreleme");
 
                 const encryptedFileData = json.encrypted_message;
 
@@ -231,6 +245,8 @@
                 alert("DEŞİFRELEME BAŞARISIZ!\nHata: " + (json.error || "Yanlış anahtar olabilir."));
                 return;
             }
+
+            if(json.duration) showPerformance(json.duration, method, "Dosya Deşifre");
             
             const decryptedBase64 = json.decrypted_message;
             const content = li.querySelector(".msg-content");
@@ -305,6 +321,8 @@
                 alert("Deşifreleme Başarısız!\nHata: " + (json.error || "Yanlış anahtar olabilir."));
                 return;
             }
+
+            if(json.duration) showPerformance(json.duration, method, "Deşifreleme");
             
             const plaintext = json.decrypted_message;
             const content = li.querySelector(".msg-content");
@@ -341,6 +359,8 @@
             const json = await resp.json();
             if (!resp.ok) { alert(json.error || "Şifreleme başarısız"); return; }
             
+            if(json.duration) showPerformance(json.duration, method, "Şifreleme");
+
             const cipher = json.encrypted_message;
             const id = "m-" + Date.now() + "-" + Math.floor(Math.random() * 10000);
             
@@ -358,7 +378,7 @@
             messageInput.value = "";
         } catch(err) { console.error(err); alert("Hata oluştu"); }
     }
-
+    
     function appendFileMessage({id, sender, direction, filename, filedata, isEncrypted, method, ts}) {
         const li = document.createElement("li");
         li.className = `message-item ${direction}`;

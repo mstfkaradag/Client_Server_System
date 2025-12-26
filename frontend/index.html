@@ -58,10 +58,10 @@
         <div class="form-group" id="fileUploadContainer" style="display: none; background: rgba(255,255,255,0.8); padding: 15px; border-radius: 12px; border: 2px dashed #ccc;">
             <label>🔒 Şifreli Dosya Gönder (PNG, TXT, DOCX)</label>
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <input type="file" id="fileInput" accept=".txt,.png,.docx,.doc,.jpg,.jpeg">
+                <input type="file" id="fileInput" accept=".txt,.png,.docx,.doc,.jpg,.jpeg,.pptx,.ppt,.pdf">
                 <button id="sendFileBtn" onclick="processFile()" style="width: auto; margin:0; flex-grow: 1;">Yükle ve Şifrele</button>
             </div>
-            <small style="color: #666; font-size: 0.8em;">Sadece AES, DES ve RSA modlarında aktiftir.</small>
+            <small style="color: #666; font-size: 0.8em;">Sadece AES, DES, RSA ve ECC modlarında aktiftir.</small>
         </div>
 
         <div class="form-group">
@@ -83,6 +83,26 @@
 
         <button id="sendBtn" onclick="processMessage()">Gönder</button>
         <button id="clearHistoryBtn" onclick="clearHistory()">Geçmişi Temizle</button>
+    </div>
+
+    <div id="perfBox" style="
+        position: fixed; 
+        bottom: 20px; 
+        right: 20px; 
+        background: rgba(0,0,0,0.8); 
+        color: #0f0; 
+        padding: 15px; 
+        border-radius: 8px; 
+        font-family: monospace; 
+        font-size: 14px; 
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        z-index: 9999;
+        display: none;
+        min-width: 200px;
+    ">
+        <div>⏱️ İşlem Süresi</div>
+        <div id="perfTime" style="font-size: 18px; font-weight: bold; margin-top: 5px;">0.0000s</div>
+        <div id="perfMethod" style="font-size: 12px; color: #ccc; margin-top: 2px;">-</div>
     </div>
 
     <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"
