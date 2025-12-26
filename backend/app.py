@@ -16,6 +16,7 @@ from encryption.route import RouteCipher
 from encryption.columnar import ColumnarTransposition
 from encryption.pigpen import PigpenCipher
 from encryption.hill import HillCipher
+from encryption.aes_manual import AesManual
 
 app = Flask(__name__, static_folder="../frontend", static_url_path="/")
 CORS(app)
@@ -121,6 +122,12 @@ def encrypt():
                 return bad_request("Key boş bırakılamaz")
             result = AesLib(key)
             result_text = result.encrypt(message)
+        elif method == "aes-manual":
+            key = data.get("key", "")
+            if not isinstance(key, str) or key.strip() == "":
+                return bad_request("Key boş bırakılamaz")
+            result = AesManual(key)
+            result_text = result.encrypt(message)
         elif method == "des-with-lib":
             key = data.get("key", "")
             if not isinstance(key, str) or key.strip() == "":
@@ -175,6 +182,12 @@ def decrypt():
             if not key:
                 return bad_request("Matris anahtarı gerekli")
             result = HillCipher(key)
+            result_text = result.decrypt(message)
+        elif method == "aes-manual":
+            key = data.get("key", "")
+            if not isinstance(key, str) or key.strip() == "":
+                return bad_request("Key boş bırakılamaz")
+            result = AesManual(key)
             result_text = result.decrypt(message)
         elif method == "rail-fence":
             key = data.get("key")
@@ -266,10 +279,6 @@ def generate_keys():
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-@socketio.on("send_cipher")
-def handle_send_cipher(data):
-    emit("recv_cipher", data, broadcast=True, include_self=False)
 
 @socketio.on("send_cipher")
 def handle_send_cipher(data):

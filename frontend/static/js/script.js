@@ -84,7 +84,7 @@
             keyLabel.textContent = `Anahtar (${method.includes("aes") ? "16" : "8"} karakter)`;
             keyInput.placeholder = "Anahtar giriniz...";
         }
-        else if (method === "des-manual") {
+        else if (method === "des-manual" || method === "aes-manual") {
             keyLabel.textContent = "Anahtar (İlk 10 bit kullanılır)";
             keyInput.placeholder = "Anahtar giriniz...";
         }
