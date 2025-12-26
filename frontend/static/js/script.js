@@ -44,7 +44,7 @@
         keyInput.placeholder = "Anahtar giriniz...";
         keyInput.type = "text"; 
 
-        const fileSupportMethods = ["aes-with-lib", "des-with-lib", "rsa-with-lib"];
+        const fileSupportMethods = ["aes-with-lib", "des-with-lib", "rsa-with-lib", "ecc-with-lib"];
         if (fileSupportMethods.includes(method) && fileUploadContainer) {
             fileUploadContainer.style.display = "block";
         }
@@ -73,18 +73,21 @@
             keyLabel.textContent = "Matris Anahtarı (Boşlukla ayırın)";
             keyInput.placeholder = "Örn 2x2 için: 3 3 2 5";
         }
-        else if (method === "rsa-with-lib") {
+        else if (method === "rsa-with-lib" || method === "ecc-with-lib") {
             keyInput.type = "text"; 
             keyLabel.textContent = "Public Key (Şifreleme İçin)";
             keyInput.placeholder = "-----BEGIN PUBLIC KEY----- ...";
             genKeyBtn.style.display = "block";
             privateKeyGroup.style.display = "block";
+            
+            if(method === "ecc-with-lib") genKeyBtn.textContent = "ECC Anahtar Çifti Oluştur";
+            else genKeyBtn.textContent = "RSA Anahtar Çifti Oluştur";
         }
         else if (method.includes("aes") || method.includes("des")) {
             keyLabel.textContent = `Anahtar (${method.includes("aes") ? "16" : "8"} karakter)`;
             keyInput.placeholder = "Anahtar giriniz...";
         }
-        else if (method === "des-manual" || method === "aes-manual") {
+        else if (method === "des-manual") {
             keyLabel.textContent = "Anahtar (İlk 10 bit kullanılır)";
             keyInput.placeholder = "Anahtar giriniz...";
         }
@@ -96,8 +99,13 @@
     window.generateRSAKeys = async function() {
         genKeyBtn.textContent = "Üretiliyor...";
         genKeyBtn.disabled = true;
+        
+        const method = methodSelect.value;
+        let algo = "rsa";
+        if(method === "ecc-with-lib") algo = "ecc";
+
         try {
-            const resp = await fetch("/generate-keys");
+            const resp = await fetch(`/generate-keys?algo=${algo}`);
             const json = await resp.json();
             if(json.error) alert("Hata: " + json.error);
             else {
@@ -106,7 +114,7 @@
             }
         } catch(e) { alert("Hata: " + e); } 
         finally {
-            genKeyBtn.textContent = "RSA Anahtar Çifti Oluştur";
+            genKeyBtn.textContent = (algo === "ecc" ? "ECC" : "RSA") + " Anahtar Çifti Oluştur";
             genKeyBtn.disabled = false;
         }
     };
@@ -121,17 +129,17 @@
 
         if (!file) { alert("Lütfen dosya seçin!"); return; }
         
-        const allowedMethods = ["aes-with-lib", "des-with-lib", "rsa-with-lib"];
+        const allowedMethods = ["aes-with-lib", "des-with-lib", "rsa-with-lib", "ecc-with-lib"];
         if (!allowedMethods.includes(method)) {
-            alert("Dosya şifreleme sadece AES, DES ve RSA (Kütüphaneli) ile çalışır.");
+            alert("Dosya şifreleme sadece AES, DES, RSA ve ECC (Kütüphaneli) ile çalışır.");
             return;
         }
 
         if ((method.includes("aes") || method.includes("des")) && !key) { alert("Anahtar gerekli!"); return; }
-        if (method === "rsa-with-lib" && !key) { alert("Public Key gerekli!"); return; }
+        if ((method === "rsa-with-lib" || method === "ecc-with-lib") && !key) { alert("Public Key gerekli!"); return; }
 
-        if (file.size > 2 * 1024 * 1024) { 
-            alert("Dosya boyutu çok büyük! (Max 2MB)");
+        if (file.size > 10 * 1024 * 1024) { 
+            alert("Dosya boyutu çok büyük! (Max 10MB)");
             return;
         }
 
@@ -189,56 +197,6 @@
         reader.readAsDataURL(file);
     }
 
-    function appendFileMessage({id, sender, direction, filename, filedata, isEncrypted, method, ts}) {
-        const li = document.createElement("li");
-        li.className = `message-item ${direction}`;
-        
-        li.dataset.cipher = filedata; 
-        li.dataset.method = method;
-        li.dataset.filename = filename;
-        if(id) li.id = id;
-        else li.id = "file-" + Date.now() + Math.floor(Math.random()*1000);
-
-        const header = document.createElement("div");
-        header.className = "msg-header";
-        let headerText = sender;
-        if (direction === "sent") headerText += " (siz)";
-        headerText += ` • ${ts || timeNow()}`;
-        header.textContent = headerText;
-
-        const content = document.createElement("div");
-        content.className = "msg-content";
-        
-        if (isEncrypted) {
-            content.innerHTML = `
-                <div style="text-align: center; padding: 15px; background: #eee; border-radius: 8px; color: #555;">
-                    <div style="font-size: 30px;">🔒</div>
-                    <div><strong>Şifreli Dosya</strong></div>
-                    <div style="font-size: 0.8em; margin-top:5px;">${filename}</div>
-                    <div style="font-size: 0.8em;">Algoritma: ${method}</div>
-                </div>
-            `;
-            const controls = document.createElement("div");
-            controls.className = "msg-controls";
-            const decryptBtn = document.createElement("button");
-            decryptBtn.textContent = "Dosyayı Deşifre Et";
-            decryptBtn.className = "decrypt-btn";
-            decryptBtn.onclick = () => decryptFileMessage(li.id);
-            controls.appendChild(decryptBtn);
-            li.appendChild(header);
-            li.appendChild(content);
-            li.appendChild(controls);
-        } 
-        else {
-            renderFileContent(content, filename, filedata, direction);
-            li.appendChild(header);
-            li.appendChild(content);
-        }
-
-        messageList.appendChild(li);
-        messageList.scrollTop = messageList.scrollHeight;
-    }
-
     async function decryptFileMessage(id) {
         const li = document.getElementById(id);
         if (!li) return;
@@ -248,7 +206,7 @@
         const filename = li.dataset.filename;
         
         let keyToSend = keyInput.value || "";
-        if (method === "rsa-with-lib") {
+        if (method === "rsa-with-lib" || method === "ecc-with-lib") {
             keyToSend = privateKeyInput.value || "";
             if(!keyToSend) { alert("Özel Anahtar (Private Key) gerekli!"); return; }
         } else if (!keyToSend) {
@@ -270,7 +228,7 @@
             const json = await resp.json();
             
             if (!resp.ok) {
-                alert("DEŞİFRELEME BAŞARISIZ!\nHata: " + (json.error || "Bilinmeyen hata. Anahtarı kontrol edin."));
+                alert("DEŞİFRELEME BAŞARISIZ!\nHata: " + (json.error || "Yanlış anahtar olabilir."));
                 return;
             }
             
@@ -322,74 +280,6 @@
         return html;
     }
 
-    function appendMessage({id, sender, direction, cipher, method, alphabet, ts}) {
-        const li = document.createElement("li");
-        li.className = `message-item ${direction}`;
-        li.dataset.cipher = cipher;
-        li.dataset.method = method || "";
-        li.id = id;
-
-        const header = document.createElement("div");
-        header.className = "msg-header";
-        let headerText = sender;
-        if (direction === "sent") headerText += " (siz)";
-        headerText += ` • ${ts || timeNow()}`;
-        header.textContent = headerText;
-
-        const content = document.createElement("div");
-        content.className = "msg-content";
-
-        if (method === "pigpen" && li.dataset.decrypted !== "true") {
-            content.innerHTML = renderPigpenImages(cipher);
-            content.style.display = "flex";
-            content.style.flexWrap = "wrap";
-            content.style.gap = "2px";
-            content.style.alignItems = "center";
-        } else {
-            content.textContent = cipher;
-        }
-
-        const controls = document.createElement("div");
-        controls.className = "msg-controls";
-
-        const decryptBtn = document.createElement("button");
-        decryptBtn.textContent = "Deşifre et";
-        decryptBtn.className = "decrypt-btn";
-        decryptBtn.addEventListener("click", () => decryptSingleMessage(id));
-
-        const restoreBtn = document.createElement("button");
-        restoreBtn.textContent = "Şifrele";
-        restoreBtn.className = "restore-btn";
-        restoreBtn.style.display = "none";
-        restoreBtn.addEventListener("click", () => restoreCipher(id));
-
-        controls.appendChild(decryptBtn);
-        controls.appendChild(restoreBtn);
-
-        li.appendChild(header);
-        li.appendChild(content);
-        li.appendChild(controls);
-        messageList.appendChild(li);
-        messageList.scrollTop = messageList.scrollHeight;
-        
-        if (showDecrypted.checked) decryptSingleMessage(id);
-    }
-
-    function restoreCipher(id) {
-        const li = document.getElementById(id);
-        if (!li) return;
-        const cipher = li.dataset.cipher;
-        const method = li.dataset.method;
-        const content = li.querySelector(".msg-content");
-
-        if (method === "pigpen") content.innerHTML = renderPigpenImages(cipher);
-        else content.textContent = cipher;
-        
-        li.querySelector(".restore-btn").style.display = "none";
-        li.querySelector(".decrypt-btn").style.display = "";
-        li.dataset.decrypted = "false";
-    }
-
     async function decryptSingleMessage(id) {
         const li = document.getElementById(id);
         if (!li) return;
@@ -398,9 +288,9 @@
         const alphabet = li.dataset.alphabet || alphabetInput.value;
         
         let keyToSend = keyInput.value || "";
-        if (method === "rsa-with-lib") {
+        if (method === "rsa-with-lib" || method === "ecc-with-lib") {
             keyToSend = privateKeyInput.value || "";
-            if(!keyToSend) { alert("RSA Private Key gerekli!"); return; }
+            if(!keyToSend) { alert("Private Key gerekli!"); return; }
         }
 
         try {
@@ -439,7 +329,7 @@
             if ((method === "caesar" || method === "rail-fence" || method === "route") && (key === "" || isNaN(Number(key)))) {
                 alert("Sayısal anahtar gerekli"); return;
             }
-            if (method === "rsa-with-lib" && !key) { alert("RSA Public Key gerekli"); return; }
+            if ((method === "rsa-with-lib" || method === "ecc-with-lib") && !key) { alert("Public Key gerekli"); return; }
         }
         
         try {
@@ -468,28 +358,111 @@
             messageInput.value = "";
         } catch(err) { console.error(err); alert("Hata oluştu"); }
     }
+
+    function appendFileMessage({id, sender, direction, filename, filedata, isEncrypted, method, ts}) {
+        const li = document.createElement("li");
+        li.className = `message-item ${direction}`;
+        li.dataset.cipher = filedata; 
+        li.dataset.method = method;
+        li.dataset.filename = filename;
+        if(id) li.id = id;
+        else li.id = "file-" + Date.now() + Math.floor(Math.random()*1000);
+
+        const header = document.createElement("div");
+        header.className = "msg-header";
+        header.textContent = sender + (direction === "sent" ? " (siz)" : "") + ` • ${ts || timeNow()}`;
+
+        const content = document.createElement("div");
+        content.className = "msg-content";
+        
+        if (isEncrypted) {
+            content.innerHTML = `
+                <div style="text-align: center; padding: 15px; background: #eee; border-radius: 8px; color: #555;">
+                    <div style="font-size: 30px;">🔒</div>
+                    <div><strong>Şifreli Dosya</strong></div>
+                    <div style="font-size: 0.8em; margin-top:5px;">${filename}</div>
+                    <div style="font-size: 0.8em;">Algoritma: ${method}</div>
+                </div>`;
+            const controls = document.createElement("div");
+            controls.className = "msg-controls";
+            const decryptBtn = document.createElement("button");
+            decryptBtn.textContent = "Dosyayı Deşifre Et";
+            decryptBtn.className = "decrypt-btn";
+            decryptBtn.onclick = () => decryptFileMessage(li.id);
+            controls.appendChild(decryptBtn);
+            li.appendChild(header); li.appendChild(content); li.appendChild(controls);
+        } else {
+            renderFileContent(content, filename, filedata, direction);
+            li.appendChild(header); li.appendChild(content);
+        }
+        messageList.appendChild(li);
+        messageList.scrollTop = messageList.scrollHeight;
+    }
+
+    function appendMessage({id, sender, direction, cipher, method, alphabet, ts}) {
+        const li = document.createElement("li");
+        li.className = `message-item ${direction}`;
+        li.dataset.cipher = cipher;
+        li.dataset.method = method || "";
+        li.id = id;
+
+        const header = document.createElement("div");
+        header.className = "msg-header";
+        header.textContent = sender + (direction === "sent" ? " (siz)" : "") + ` • ${ts || timeNow()}`;
+
+        const content = document.createElement("div");
+        content.className = "msg-content";
+
+        if (method === "pigpen" && li.dataset.decrypted !== "true") {
+            content.innerHTML = renderPigpenImages(cipher);
+            content.style.display = "flex"; content.style.flexWrap = "wrap"; content.style.gap = "2px"; content.style.alignItems = "center";
+        } else {
+            content.textContent = cipher;
+        }
+
+        const controls = document.createElement("div");
+        controls.className = "msg-controls";
+        const decryptBtn = document.createElement("button");
+        decryptBtn.textContent = "Deşifre et";
+        decryptBtn.className = "decrypt-btn";
+        decryptBtn.addEventListener("click", () => decryptSingleMessage(id));
+        const restoreBtn = document.createElement("button");
+        restoreBtn.textContent = "Şifrele";
+        restoreBtn.className = "restore-btn";
+        restoreBtn.style.display = "none";
+        restoreBtn.addEventListener("click", () => restoreCipher(id));
+
+        controls.appendChild(decryptBtn);
+        controls.appendChild(restoreBtn);
+        li.appendChild(header); li.appendChild(content); li.appendChild(controls);
+        messageList.appendChild(li);
+        messageList.scrollTop = messageList.scrollHeight;
+        if (showDecrypted.checked) decryptSingleMessage(id);
+    }
+
+    function restoreCipher(id) {
+        const li = document.getElementById(id);
+        if (!li) return;
+        const cipher = li.dataset.cipher;
+        const method = li.dataset.method;
+        const content = li.querySelector(".msg-content");
+        if (method === "pigpen") content.innerHTML = renderPigpenImages(cipher);
+        else content.textContent = cipher;
+        li.querySelector(".restore-btn").style.display = "none";
+        li.querySelector(".decrypt-btn").style.display = "";
+        li.dataset.decrypted = "false";
+    }
     
     function setupSocketHandlers() {
         if (!socket) return;
         socket.on("connect", () => console.log("Bağlandı: ", socket.id));
-        
         socket.on("recv_cipher", (data) => {
-            if (!data) return;
             const ts = data.ts ? timeFromEpoch(data.ts) : timeNow();
             appendMessage({ id: "m-"+Date.now(), sender: data.sender || "Anonim", direction: "received", cipher: data.encrypted_message, method: data.method, alphabet: "", ts });
         });
-
         socket.on("recv_file", (data) => {
             const ts = data.ts ? timeFromEpoch(data.ts) : timeNow();
-            appendFileMessage({
-                sender: data.sender,
-                direction: "received",
-                filename: data.filename,
-                filedata: data.filedata,
-                isEncrypted: data.isEncrypted,
-                method: data.method,
-                ts: ts
-            });
+            appendFileMessage({ sender: data.sender, direction: "received", filename: data.filename, filedata: data.filedata, isEncrypted: data.isEncrypted, method: data.method, ts: ts });
         });
     }
 

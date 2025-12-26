@@ -10,6 +10,7 @@ from encryption.playfair import Playfair
 from encryption.aes_lib import AesLib
 from encryption.des_lib import DesLib
 from encryption.rsa_lib import RsaLib
+from encryption.ecc_lib import EccLib
 from encryption.des_manual import DesManual
 from encryption.rail_fence import RailFenceCipher
 from encryption.route import RouteCipher
@@ -80,6 +81,11 @@ def encrypt():
                 return bad_request("Key bir sayı olmalıdır")
             result = RouteCipher(key)
             result_text = result.encrypt(message)
+        elif method == "ecc-with-lib":
+            key = data.get("key", "")
+            if not key:
+                return bad_request("ECC Public Key gerekli")
+            result_text = EccLib.encrypt(message, key)
         elif method == "des-manual":
             key = data.get("key", "")
             if not isinstance(key, str) or key.strip() == "": 
@@ -183,6 +189,11 @@ def decrypt():
                 return bad_request("Matris anahtarı gerekli")
             result = HillCipher(key)
             result_text = result.decrypt(message)
+        elif method == "ecc-with-lib":
+            key = data.get("key", "")
+            if not key:
+                return bad_request("ECC Private Key gerekli")
+            result_text = EccLib.decrypt(message, key)
         elif method == "aes-manual":
             key = data.get("key", "")
             if not isinstance(key, str) or key.strip() == "":
@@ -272,14 +283,20 @@ def decrypt():
 @app.route("/generate-keys", methods=["GET"])
 def generate_keys():
     try:
-        private_k, public_k = RsaLib.generate_keys()
+        algo = request.args.get('algo', 'rsa') 
+        
+        if algo == 'ecc':
+            private_k, public_k = EccLib.generate_keys()
+        else:
+            private_k, public_k = RsaLib.generate_keys()
+            
         return jsonify({
             "private_key": private_k,
             "public_key": public_k
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
+    
 @socketio.on("send_cipher")
 def handle_send_cipher(data):
     emit("recv_cipher", data, broadcast=True, include_self=False)
