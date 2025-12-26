@@ -512,7 +512,7 @@
     (async function init() {
         try {
             await loadSocketIoClient();
-            socket = window.io ? window.io() : null;
+            socket = window.io ? window.io({ transports: ['websocket'], upgrade: false }) : null;
             if (socket) setupSocketHandlers();
         } catch(err) { console.warn("Socket hatası: ", err); }
     })();
