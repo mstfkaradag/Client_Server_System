@@ -327,5 +327,9 @@ def handle_send_cipher(data):
 def handle_send_file(data):
     emit("recv_file", data, broadcast=True, include_self=False)
 
+@socketio.on("share_key")
+def handle_share_key(data):
+    emit("recv_key", data, broadcast=True, include_self=False)
+
 if __name__ == "__main__":
     socketio.run(app, host="0.0.0.0", port=5000, debug=True)

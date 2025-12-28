@@ -11,6 +11,7 @@
     const clearHistoryBtn = document.getElementById('clearHistoryBtn');
     const usernameInput = document.getElementById('username');
     const genKeyBtn = document.getElementById('genKeyBtn');
+    const shareKeyBtn = document.getElementById('shareKeyBtn');
     const privateKeyGroup = document.getElementById('privateKeyGroup');
     const privateKeyInput = document.getElementById('privateKey');
     const fileInput = document.getElementById('fileInput');
@@ -47,6 +48,7 @@
         alphabetGroup.style.display = "none";
         privateKeyGroup.style.display = "none";
         genKeyBtn.style.display = "none";
+        if(shareKeyBtn) shareKeyBtn.style.display = "none";
         if(fileUploadContainer) fileUploadContainer.style.display = "none"; 
         
         keyInput.style.display = ""; 
@@ -91,6 +93,8 @@
             genKeyBtn.style.display = "block";
             privateKeyGroup.style.display = "block";
             
+            if(shareKeyBtn) shareKeyBtn.style.display = "block";
+            
             if(method === "ecc-with-lib") genKeyBtn.textContent = "ECC Anahtar Çifti Oluştur";
             else genKeyBtn.textContent = "RSA Anahtar Çifti Oluştur";
         }
@@ -128,6 +132,33 @@
         finally {
             genKeyBtn.textContent = (algo === "ecc" ? "ECC" : "RSA") + " Anahtar Çifti Oluştur";
             genKeyBtn.disabled = false;
+        }
+    };
+
+    window.sharePublicKey = function() {
+        const key = keyInput.value;
+        const method = methodSelect.value;
+        const usernameTemp = usernameInput.value.trim() || "user_guest";
+
+        if (!method.includes("rsa") && !method.includes("ecc")) {
+            alert("Sadece RSA veya ECC Public Key paylaşılabilir!");
+            return;
+        }
+        if (!key || key.includes("PRIVATE KEY")) {
+            alert("Paylaşılacak geçerli bir Public Key bulunamadı! Lütfen önce anahtar üretin.");
+            return;
+        }
+
+        if (socket) {
+            socket.emit("share_key", {
+                sender: usernameTemp,
+                key: key,
+                algo: method.includes("ecc") ? "ECC" : "RSA",
+                ts: Date.now()
+            });
+            alert("Public Key ağdaki herkese gönderildi!");
+        } else {
+            alert("Bağlantı yok!");
         }
     };
 
@@ -476,13 +507,45 @@
     function setupSocketHandlers() {
         if (!socket) return;
         socket.on("connect", () => console.log("Bağlandı: ", socket.id));
+        
         socket.on("recv_cipher", (data) => {
             const ts = data.ts ? timeFromEpoch(data.ts) : timeNow();
             appendMessage({ id: "m-"+Date.now(), sender: data.sender || "Anonim", direction: "received", cipher: data.encrypted_message, method: data.method, alphabet: "", ts });
         });
+        
         socket.on("recv_file", (data) => {
             const ts = data.ts ? timeFromEpoch(data.ts) : timeNow();
             appendFileMessage({ sender: data.sender, direction: "received", filename: data.filename, filedata: data.filedata, isEncrypted: data.isEncrypted, method: data.method, ts: ts });
+        });
+
+        socket.on("recv_key", (data) => {
+            const ts = data.ts ? timeFromEpoch(data.ts) : timeNow();
+            const li = document.createElement("li");
+            li.className = "message-item received";
+            const header = document.createElement("div");
+            header.className = "msg-header";
+            header.textContent = `${data.sender} • ${ts}`;
+            const content = document.createElement("div");
+            content.className = "msg-content";
+            content.style.backgroundColor = "#fff3cd"; content.style.color = "#856404";
+            
+            content.innerHTML = `
+                <div><strong>🔑 ${data.algo} Public Key Paylaştı</strong></div>
+                <div style="font-size: 0.8em; margin-bottom: 5px;">Bana şifreli mesaj atmak için bu anahtarı kullan.</div>
+                <button class="use-key-btn" style="background:#28a745; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Anahtarı Yükle ve Kullan</button>
+            `;
+            
+            const btn = content.querySelector(".use-key-btn");
+            btn.onclick = function() {
+                if(data.algo === "ECC") methodSelect.value = "ecc-with-lib";
+                else methodSelect.value = "rsa-with-lib";
+                handleMethodChange();
+                keyInput.value = data.key;
+                alert(`${data.sender} kişisinin ${data.algo} anahtarı yüklendi!`);
+            };
+
+            li.appendChild(header); li.appendChild(content);
+            messageList.appendChild(li); messageList.scrollTop = messageList.scrollHeight;
         });
     }
 
